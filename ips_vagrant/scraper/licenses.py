@@ -22,6 +22,7 @@ class Licenses(object):
     def get(self):
         """
         Fetch all licenses associated with our account
+        @rtype: list of LicenseMeta
         """
         response = requests.get(self.URL, cookies=self.cookiejar)
         self.log.debug('Response code: %s', response.status_code)
@@ -45,6 +46,8 @@ class Licenses(object):
                     com_pattern.search(a.text).group(1)
                 )
             )
+
+        return licenses
 
 
 class LicenseMeta(object):
