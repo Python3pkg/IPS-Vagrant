@@ -5,7 +5,7 @@ import logging
 from ConfigParser import ConfigParser
 from ips_vagrant.scraper import Login
 
-CONTEXT_SETTINGS = dict(auto_envvar_prefix='IPSV')
+CONTEXT_SETTINGS = dict(auto_envvar_prefix='IPSV', max_content_width=120)
 
 
 class Context(object):
@@ -15,16 +15,19 @@ class Context(object):
     def __init__(self):
         self.cookiejar = None
         self.config = None
+        self.config_path = None
         self.log = None
+        self.license = None
+        self.cache = None
         self.basedir = os.path.join(os.path.dirname(os.path.realpath(__file__)))
         self._load_config()
 
         self._login = Login(self)
 
     def _load_config(self):
+        self.config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config', 'ipsv.conf')
         self.config = ConfigParser()
-        self.config.read(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config', 'ipsv.conf'))
-        print(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config', 'ipsv.conf'))
+        self.config.read(self.config_path)
 
     def get_login(self, use_session=True):
         # Should we try and return an existing login session?
@@ -97,23 +100,23 @@ class IpsvCLI(click.MultiCommand):
 pass_context = click.make_pass_decorator(Context, ensure=True)
 
 
-@click.command(cls=IpsvCLI)
-@click.option('--home', type=click.Path(exists=True, file_okay=False,
-                                        resolve_path=True),
-              help='Changes the folder to operate on.')
+@click.command(cls=IpsvCLI, context_settings=CONTEXT_SETTINGS)
 @click.option('-v', '--verbose', count=True, help='-v|vv|vvv Increase the verbosity of messages: 1 for normal output, '
                                                   '2 for more verbose output and 3 for debug')
+@click.option('--license', envvar='LICENSE', help='License key to use for requests')
+@click.option('--cache/--no-cache', default=True, help='Use cached version downloads if possible (Default: True)')
 @pass_context
-def cli(ctx, verbose, home):
+def cli(ctx, verbose, license, cache):
     """
     IPS Vagrant Management Utility
-    @type   ctx:        Context
-    @type   verbose:    int
     """
     # Set up the logger
     verbose = verbose if (verbose <= 3) else 3
     log_levels = {1: logging.WARN, 2: logging.INFO, 3: logging.DEBUG}
     log_level = log_levels[verbose]
+
+    ctx.license = license
+    ctx.cache = cache
 
     ctx.log = logging.getLogger('ipsv')
     ctx.log.setLevel(log_level)
