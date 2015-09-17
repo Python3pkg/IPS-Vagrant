@@ -1,0 +1,2 @@
+class HtmlParserError(Exception):
+    pass
