@@ -15,9 +15,10 @@ def cli(ctx):
 
     # Create our package directories
     click.echo('Creating IPS Vagrant system directories..')
-    os.makedirs(ctx.config.get('Paths', 'Config'), 0o755, True)
-    os.makedirs(ctx.config.get('Paths', 'Data'), 0o755, True)
-    os.makedirs(ctx.config.get('Paths', 'Log'), 0o755, True)
+    dirs = [ctx.config.get('Paths', 'Config'), ctx.config.get('Paths', 'Data'), ctx.config.get('Paths', 'Log')]
+    for d in dirs:
+        if not os.path.exists(d):
+            os.makedirs(d, 0o755)
 
     click.echo('Copying IPS Vagrant configuration files..')
     shutil.copyfile(ctx.config_path, os.path.join(ctx.config.get('Paths', 'Config'), 'ipsv.conf'))
