@@ -17,5 +17,5 @@ setup(
     # entry_points={
     #     '': ['']
     # },
-    requires=['beautifulsoup4', 'mechanize']
+    requires=['beautifulsoup4', 'mechanize', 'click', 'requests']
 )
