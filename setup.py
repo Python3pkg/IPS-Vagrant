@@ -14,6 +14,7 @@ setup(
         'License :: OSI Approved :: MIT License',
     ],
     packages=find_packages(),
+    package_data={'ips_vagrant': ['config/*.conf']},
     entry_points={
         'console_scripts': [
             'ipsv = ips_vagrant.cli:cli'

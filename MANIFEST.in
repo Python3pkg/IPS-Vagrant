@@ -1,1 +1,1 @@
-recursive-include ips_vagrant/config *
+recursive-include ips_vagrant/config *.conf
