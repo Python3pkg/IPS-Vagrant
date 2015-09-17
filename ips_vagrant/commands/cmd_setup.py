@@ -1,7 +1,6 @@
-import logging
 import apt
-import apt.progress
 import click
+import logging
 from ips_vagrant.cli import pass_context, Context
 
 
@@ -19,7 +18,7 @@ def cli(ctx):
     cache.open(None)
     click.echo('Upgrading system packages..')
     cache.upgrade()
-    cache.commit(apt.progress.TextFetchProgress(), apt.progress.InstallProgress())
+    cache.commit()
 
     # Install our required packages
     requirements = ['nginx', 'php5-fpm', 'php5-curl', 'php5-gd', 'php5-imagick', 'php5-json', 'php5-mysql',
