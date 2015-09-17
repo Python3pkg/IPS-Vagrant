@@ -14,8 +14,10 @@ setup(
         'License :: OSI Approved :: MIT License',
     ],
     packages=find_packages(),
-    # entry_points={
-    #     '': ['']
-    # },
+    entry_points={
+        'console_scripts': [
+            'ipsv = ips_vagrant.cli:cli'
+        ]
+    },
     requires=['beautifulsoup4', 'mechanize', 'click', 'requests']
 )
