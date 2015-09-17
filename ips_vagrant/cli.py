@@ -101,8 +101,9 @@ pass_context = click.make_pass_decorator(Context, ensure=True)
 
 
 @click.command(cls=IpsvCLI, context_settings=CONTEXT_SETTINGS)
-@click.option('-v', '--verbose', count=True, help='-v|vv|vvv Increase the verbosity of messages: 1 for normal output, '
-                                                  '2 for more verbose output and 3 for debug')
+@click.option('-v', '--verbose', count=True, default=1,
+              help='-v|vv|vvv Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and '
+                   '3 for debug')
 @click.option('--license', envvar='LICENSE', help='License key to use for requests')
 @click.option('--cache/--no-cache', default=True, help='Use cached version downloads if possible (Default: True)')
 @pass_context
