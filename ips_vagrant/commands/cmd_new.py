@@ -3,7 +3,7 @@ from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.scraper import Licenses, Version
 
 
-@click.command('status', short_help='Creates a new IPS installation.')
+@click.command('new', short_help='Creates a new IPS installation.')
 @pass_context
 def cli(ctx):
     """Creates a new installation of Invision Power Suite."""
