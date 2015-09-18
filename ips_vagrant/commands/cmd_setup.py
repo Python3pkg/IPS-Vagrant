@@ -1,5 +1,4 @@
 import os
-import shutil
 import logging
 import apt
 import click
@@ -21,7 +20,7 @@ def cli(ctx):
             os.makedirs(d, 0o755)
 
     click.echo('Copying IPS Vagrant configuration files..')
-    shutil.copyfile(ctx.config_path, os.path.join(ctx.config.get('Paths', 'Config'), 'ipsv.conf'))
+    ctx.config.write('/etc/ipsv/ipsv.conf')
 
     # Update the system
     click.echo('Updating package cache..')

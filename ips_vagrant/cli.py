@@ -1,5 +1,4 @@
 import os
-import sys
 import click
 import logging
 from ConfigParser import ConfigParser
@@ -14,19 +13,21 @@ class Context(object):
     """
     def __init__(self):
         self.cookiejar = None
-        self.config = None
+        self.config = ConfigParser()
         self.config_path = None
         self.log = None
         self.license = None
         self.cache = None
         self.basedir = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-        self._load_config()
 
+        self.load_config(os.path.join(self.basedir, 'config', 'ipsv.conf'))
+        self._login = None
+
+    def setup(self):
         self._login = Login(self)
 
-    def _load_config(self):
-        self.config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config', 'ipsv.conf')
-        self.config = ConfigParser()
+    def load_config(self, path):
+        self.config_path = path
         self.config.read(self.config_path)
 
     def get_login(self, use_session=True):
@@ -106,21 +107,32 @@ pass_context = click.make_pass_decorator(Context, ensure=True)
                    '3 for debug')
 @click.option('--license', envvar='LICENSE', help='License key to use for requests')
 @click.option('--cache/--no-cache', default=True, help='Use cached version downloads if possible (Default: True)')
+@click.option('-c', '--config', type=click.Path(dir_okay=False, resolve_path=True),
+              envvar='IPSV_CONFIG_PATH', default='/etc/ipsv/ipsv.conf', help='Path to the IPSV configuration file')
 @pass_context
-def cli(ctx, verbose, license, cache):
+def cli(ctx, verbose, license, cache, config):
     """
     IPS Vagrant Management Utility
     """
+    assert isinstance(ctx, Context)
     # Set up the logger
     verbose = verbose if (verbose <= 3) else 3
     log_levels = {1: logging.WARN, 2: logging.INFO, 3: logging.DEBUG}
     log_level = log_levels[verbose]
-
-    ctx.license = license
-    ctx.cache = cache
 
     ctx.log = logging.getLogger('ipsv')
     ctx.log.setLevel(log_level)
     ch = logging.StreamHandler()
     ch.setLevel(log_level)
     ctx.log.addHandler(ch)
+
+    # Load the configuration
+    click.echo(config)
+    if os.path.isfile(config):
+        ctx.config_path = config
+        ctx.load_config(config)
+        ctx.log.debug('Configuration loaded: %s', ctx.config_path)
+
+    ctx.license = license
+    ctx.cache = cache
+    ctx.setup()
