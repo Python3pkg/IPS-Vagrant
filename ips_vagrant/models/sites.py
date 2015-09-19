@@ -28,6 +28,7 @@ class Site(Base):
     ssl = Column(Integer, server_default=text("0"))
     spdy = Column(Integer, server_default=text("0"))
     gzip = Column(Integer, server_default=text("1"))
+    enabled = Column(Integer, server_default=text("0"))
     domain = relationship("Domain")
 
 

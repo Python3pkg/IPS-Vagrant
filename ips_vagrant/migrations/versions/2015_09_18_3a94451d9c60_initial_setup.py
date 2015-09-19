@@ -32,6 +32,7 @@ def upgrade():
     sa.Column('ssl', sa.Integer(), server_default=sa.text(u'0'), nullable=True),
     sa.Column('spdy', sa.Integer(), server_default=sa.text(u'0'), nullable=True),
     sa.Column('gzip', sa.Integer(), server_default=sa.text(u'1'), nullable=True),
+    sa.Column('enabled', sa.Integer(), server_default=sa.text(u'0'), nullable=True),
     sa.ForeignKeyConstraint(['domain_id'], ['domains.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
