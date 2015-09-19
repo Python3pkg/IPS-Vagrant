@@ -3,8 +3,9 @@ import click
 import logging
 from ConfigParser import ConfigParser
 from ips_vagrant.scraper import Login
+from ips_vagrant.models.sites import DBSession
 
-CONTEXT_SETTINGS = dict(auto_envvar_prefix='IPSV', max_content_width=120)
+CONTEXT_SETTINGS = dict(auto_envvar_prefix='IPSV', max_content_width=100)
 
 
 class Context(object):
@@ -16,8 +17,9 @@ class Context(object):
         self.config = ConfigParser()
         self.config_path = None
         self.log = None
-        self.license = None
-        self.cache = None
+        # self.license = None
+        # self.cache = None
+        self.database = NotImplemented
         self.basedir = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
         self.load_config(os.path.join(self.basedir, 'config', 'ipsv.conf'))
@@ -25,6 +27,13 @@ class Context(object):
 
     def setup(self):
         self._login = Login(self)
+
+    @property
+    def db(self):
+        if self.database is NotImplemented:
+            self.database = DBSession()
+
+        return self.database
 
     def load_config(self, path):
         self.config_path = path
@@ -105,12 +114,10 @@ pass_context = click.make_pass_decorator(Context, ensure=True)
 @click.option('-v', '--verbose', count=True, default=1,
               help='-v|vv|vvv Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and '
                    '3 for debug')
-@click.option('--license', envvar='LICENSE', help='License key to use for requests')
-@click.option('--cache/--no-cache', default=True, help='Use cached version downloads if possible (Default: True)')
 @click.option('-c', '--config', type=click.Path(dir_okay=False, resolve_path=True),
               envvar='IPSV_CONFIG_PATH', default='/etc/ipsv/ipsv.conf', help='Path to the IPSV configuration file')
 @pass_context
-def cli(ctx, verbose, license, cache, config):
+def cli(ctx, verbose, config):
     """
     IPS Vagrant Management Utility
     """
@@ -133,6 +140,6 @@ def cli(ctx, verbose, license, cache, config):
         ctx.load_config(config)
         ctx.log.debug('Configuration loaded: %s', ctx.config_path)
 
-    ctx.license = license
-    ctx.cache = cache
+    # ctx.license = license
+    # ctx.cache = cache
     ctx.setup()
