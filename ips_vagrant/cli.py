@@ -134,11 +134,13 @@ def cli(ctx, verbose, config):
     ctx.log.addHandler(ch)
 
     # Load the configuration
-    click.echo(config)
     if os.path.isfile(config):
         ctx.config_path = config
+        ctx.log.debug('Loading configuration: %s', ctx.config_path)
         ctx.load_config(config)
-        ctx.log.debug('Configuration loaded: %s', ctx.config_path)
+    else:
+        ctx.config_path = os.path.join(ctx.basedir, 'config', 'ipsv.conf')
+        ctx.log.debug('Loading default configuration: %s', ctx.config_path)
 
     # ctx.license = license
     # ctx.cache = cache
