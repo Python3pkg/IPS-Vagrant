@@ -1,10 +1,12 @@
 import os
 import re
+import glob
 import click
 import shutil
 import logging
 import zipfile
 import tempfile
+import subprocess
 from urlparse import urlparse
 from sqlalchemy.sql import collate
 from ips_vagrant.models.sites import Domain, Site
@@ -17,6 +19,8 @@ from ips_vagrant.generators.nginx import ServerBlock
 @click.option('-n', '--name', prompt='Installation nickname', help='Installation name.')
 @click.option('-d', '--domain', 'dname', prompt='Domain name', envvar='DOMAIN', help='Installation domain name.')
 @click.option('-l', '--license', 'license_key', envvar='LICENSE', help='License key to use for requests.')
+@click.option('-f', '--force', is_flag=True,
+              help='Overwrite any existing files (possibly left over from a broken configuration)')
 @click.option('--enable/--disable', prompt='Do you want to enable this site after installation?', default=True,
               help='Enable site after installation. Note that this will automatically disable any existing sites '
                    'running on this domain. (Default: True)')
@@ -29,7 +33,7 @@ from ips_vagrant.generators.nginx import ServerBlock
 @click.option('--install/--no-install', envvar='INSTALL', default=True,
               help='Run the IPS installation automatically after setup. (Default: True)')
 @pass_context
-def cli(ctx, name, dname, license_key, enable, ssl, spdy, gzip, cache, install):
+def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, install):
     """Creates a new installation of Invision Power Suite."""
     assert isinstance(ctx, Context)
     login_session = ctx.get_login()
@@ -133,6 +137,35 @@ def cli(ctx, name, dname, license_key, enable, ssl, spdy, gzip, cache, install):
     log.info('Writing Nginx server block configuration file')
     with open(server_config_path, 'w') as f:
         f.write(server_block.template)
+
+    # Create a symlink if this site is being enabled
+    if site.enabled:
+        sites_enabled_path = ctx.config.get('Paths', 'NginxSitesEnabled')
+        symlink_path = os.path.join(sites_enabled_path, '{domain}-{fn}'.format(domain=domain.name,
+                                                                               fn=os.path.basename(server_config_path)))
+        links = glob.glob(os.path.join(sites_enabled_path, '{domain}-*'.format(domain=domain.name)))
+        for link in links:
+            if os.path.islink(link):
+                log.debug('Removing existing configuration symlink: %s', link)
+                os.unlink(link)
+            else:
+                if not force:
+                    log.error('Configuration symlink path already exists, but it is not a symlink')
+                    raise Exception('Misconfiguration detected: symlink path already exists, but it is not a symlink '
+                                    'and --force was not passed. Unable to continue')
+                log.warn('Configuration symlink path already exists, but it is not a symlink. '
+                         'Removing anyways since --force was set')
+                if os.path.isdir(symlink_path):
+                    shutil.rmtree(symlink_path)
+                else:
+                    os.remove(symlink_path)
+
+        log.info('Enabling Nginx configuration file')
+        os.symlink(server_config_path, symlink_path)
+
+        # Restart Nginx
+        click.echo('Restarting Nginx')
+        subprocess.check_call(['/etc/init.d/nginx', 'restart'])
 
     # Extract IPS setup files
     tmpdir = tempfile.mkdtemp('ips')
