@@ -1,26 +1,30 @@
 import os
+import re
 import click
 import logging
 from urlparse import urlparse
-from ips_vagrant.paths import HTTP_ROOT
+from sqlalchemy.sql import collate
 from ips_vagrant.models.sites import Domain, Site
-from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.scraper import Licenses, Version
+from ips_vagrant.cli import pass_context, Context
+from ips_vagrant.generator.nginx import ServerBlock
 
 
 @click.command('new', short_help='Creates a new IPS installation.')
 @click.option('-n', '--name', prompt='Installation nickname', help='Installation name.')
 @click.option('-d', '--domain', 'dname', prompt='Domain name', envvar='DOMAIN', help='Installation domain name.')
 @click.option('-l', '--license', 'license_key', envvar='LICENSE', help='License key to use for requests.')
-@click.option('--ssl/--no-ssl', envvar='SSL', default=False,
-              help='Enable SSL on this installation. (Default: False)')
+@click.option('--enable/--disable', prompt='Do you want to enable this site after installation?', default=True,
+              help='Enable site after installation. Note that this will automatically disable any existing sites '
+                   'running on this domain. (Default: True)')
+@click.option('--ssl/--no-ssl', envvar='SSL', help='Enable SSL on this installation. (Default: Auto)')
 @click.option('--spdy/--no-spdy', envvar='SPDY', default=False,
               help='Enable Google SPDY on this installation. Only applies when SSL is enabled. (Default: False)')
 @click.option('--gzip/--no-gzip', envvar='GZIP', default=True, help='Enable GZIP compression. (Default: True)')
 @click.option('--cache/--no-cache', envvar='CACHE', default=True,
               help='Use cached version downloads if possible. (Default: True)')
 @pass_context
-def cli(ctx, name, dname, license_key, ssl, spdy, gzip, cache):
+def cli(ctx, name, dname, license_key, enable, ssl, spdy, gzip, cache):
     """Creates a new installation of Invision Power Suite."""
     assert isinstance(ctx, Context)
     login_session = ctx.get_login()
@@ -57,9 +61,15 @@ def cli(ctx, name, dname, license_key, ssl, spdy, gzip, cache):
 
     # Parse the specific domain and make sure it's valid
     log.debug('Parsing domain name: %s', dname)
-    dname = urlparse(dname.lower())
+    dname = dname.lower()
+    if not dname.startswith('http://') and not dname.startswith('https://'):
+        dname = '{schema}{host}'.format(schema='http://', host=dname)
+    dname = urlparse(dname)
     if not dname.hostname:
         raise Exception('Invalid domain provided')
+
+    if not ssl:
+        ssl = dname.scheme == 'https'
 
     # Strip www prefix
     dname = dname.hostname.lstrip('www.') if dname.hostname.startswith('www.') else dname.hostname
@@ -77,16 +87,35 @@ def cli(ctx, name, dname, license_key, ssl, spdy, gzip, cache):
         ctx.db.commit()
 
     # Make sure this site does not already exist
-    site = ctx.db.query(Site).filter(Site.domain == domain).filter(Site.name == name).count()
+    site = ctx.db.query(Site).filter(Site.domain == domain).filter(collate(Site.name, 'NOCASE') == name).count()
     if site:
         log.error('Site already exists')
         raise Exception('An installation named "{s}" has already been created for the domain {d}'
                         .format(s=name, d=dname))
 
     # Construct the HTTP path
-    root = os.path.join(HTTP_ROOT, domain.name, name.lower())
+    dir_name = re.sub('[^0-9a-zA-Z_-]+', '_', name.lower())
+    root = os.path.abspath(os.path.join(ctx.config.get('Paths', 'HttpRoot'), domain.name, dir_name))
 
     # Create the site database entry
-    site = Site(name=name, domain=domain, root=root, license_key=lmeta.license_key, ssl=ssl, spdy=spdy, gzip=gzip)
+    site = Site(name=name, domain=domain, root=root, license_key=lmeta.license_key, ssl=ssl, spdy=spdy, gzip=gzip,
+                enabled=enable)
     ctx.db.add(site)
     ctx.db.commit()
+
+    # Generate our server block configuration
+    server_block = ServerBlock(site)
+
+    server_config_path = os.path.join(ctx.config.get('Paths', 'NginxSitesAvailable'), domain.name)
+    if not os.path.exists(server_config_path):
+        log.debug('Creating new configuration path: %s', server_config_path)
+        os.makedirs(server_config_path, 0o755)
+
+    server_config_path = os.path.join(server_config_path, '{fn}.conf'.format(fn=dir_name))
+    if os.path.exists(server_config_path):
+        log.warn('Server block configuration file already exists, overwriting: %s', server_config_path)
+        os.remove(server_config_path)
+
+    log.info('Writing Nginx server block configuration file')
+    with open(server_config_path, 'w') as f:
+        f.write(server_block.template)
