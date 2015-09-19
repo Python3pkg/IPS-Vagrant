@@ -1,7 +1,10 @@
 import os
 import re
 import click
+import shutil
 import logging
+import zipfile
+import tempfile
 from urlparse import urlparse
 from sqlalchemy.sql import collate
 from ips_vagrant.models.sites import Domain, Site
@@ -23,8 +26,10 @@ from ips_vagrant.generators.nginx import ServerBlock
 @click.option('--gzip/--no-gzip', envvar='GZIP', default=True, help='Enable GZIP compression. (Default: True)')
 @click.option('--cache/--no-cache', envvar='CACHE', default=True,
               help='Use cached version downloads if possible. (Default: True)')
+@click.option('--install/--no-install', envvar='INSTALL', default=True,
+              help='Run the IPS installation automatically after setup. (Default: True)')
 @pass_context
-def cli(ctx, name, dname, license_key, enable, ssl, spdy, gzip, cache):
+def cli(ctx, name, dname, license_key, enable, ssl, spdy, gzip, cache, install):
     """Creates a new installation of Invision Power Suite."""
     assert isinstance(ctx, Context)
     login_session = ctx.get_login()
@@ -96,12 +101,21 @@ def cli(ctx, name, dname, license_key, enable, ssl, spdy, gzip, cache):
     # Construct the HTTP path
     dir_name = re.sub('[^0-9a-zA-Z_-]+', '_', name.lower())
     root = os.path.abspath(os.path.join(ctx.config.get('Paths', 'HttpRoot'), domain.name, dir_name))
+    if not os.path.exists(root):
+        log.debug('Creating HTTP root directory: %s', root)
+        os.makedirs(root, 0o755)
 
     # Create the site database entry
     site = Site(name=name, domain=domain, root=root, license_key=lmeta.license_key, ssl=ssl, spdy=spdy, gzip=gzip,
                 enabled=enable)
     ctx.db.add(site)
     ctx.db.commit()
+
+    # If our new site was enabled, we need to disable any other sites utilizing this domain
+    if site.enabled:
+        log.debug('Disabling all other sites under the domain %s', domain.name)
+        ctx.db.query(Site).filter(Site.id != site.id).filter(Site.domain == domain).update({'enabled': 0})
+        ctx.db.commit()
 
     # Generate our server block configuration
     server_block = ServerBlock(site)
@@ -119,3 +133,40 @@ def cli(ctx, name, dname, license_key, enable, ssl, spdy, gzip, cache):
     log.info('Writing Nginx server block configuration file')
     with open(server_config_path, 'w') as f:
         f.write(server_block.template)
+
+    # Extract IPS setup files
+    tmpdir = tempfile.mkdtemp('ips')
+    setup_zip = os.path.join(tmpdir, 'setup.zip')
+    setup_dir = os.path.join(tmpdir, 'setup')
+    os.mkdir(setup_dir)
+
+    log.info('Extracting setup files')
+    shutil.copyfile(filename, setup_zip)
+    with zipfile.ZipFile(setup_zip) as z:
+        namelist = z.namelist()
+        if re.match(r'^ips_\w{5}\/?$', namelist[0]):
+            log.debug('Setup directory matched: %s', namelist[0])
+        else:
+            log.error('No setup directory matched, unable to continue')
+            raise Exception('Unrecognized setup file format, aborting')
+
+        z.extractall(setup_dir)
+        log.debug('Setup files extracted to: %s', setup_dir)
+        setup_tmpdir = os.path.join(setup_dir, namelist[0])
+        for filename in os.listdir(setup_tmpdir):
+            shutil.move(os.path.join(setup_tmpdir, filename), os.path.join(site.root, filename))
+
+        log.info('Setup files moved to: %s', site.root)
+
+    # Apply proper permissions
+    writeable_dirs = ['uploads', 'plugins', 'applications', 'datastore']
+    
+    for wdir in writeable_dirs:
+        log.debug('Setting file permissions in %s', wdir)
+        os.chmod(wdir, 0o777)
+        for dirname, dirnames, filenames in os.walk(os.path.join(site.root, wdir)):
+            for filename in filenames:
+                os.chmod(os.path.join(dirname, filename), 0o666)
+
+            for filename in dirnames:
+                os.chmod(os.path.join(dirname, filename), 0o777)
