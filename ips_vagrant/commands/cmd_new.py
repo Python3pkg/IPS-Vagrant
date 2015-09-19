@@ -157,6 +157,7 @@ def cli(ctx, name, dname, license_key, enable, ssl, spdy, gzip, cache, install):
             shutil.move(os.path.join(setup_tmpdir, filename), os.path.join(site.root, filename))
 
         log.info('Setup files moved to: %s', site.root)
+    shutil.rmtree(tmpdir)
 
     # Apply proper permissions
     writeable_dirs = ['uploads', 'plugins', 'applications', 'datastore']
