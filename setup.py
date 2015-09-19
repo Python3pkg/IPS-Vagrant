@@ -14,7 +14,7 @@ setup(
         'License :: OSI Approved :: MIT License',
     ],
     packages=find_packages(),
-    package_data={'ips_vagrant': ['config/*.conf', 'alembic.ini']},
+    package_data={'ips_vagrant': ['config/*.conf', 'generators/templates/nginx/*.tpl', 'alembic.ini']},
     entry_points={
         'console_scripts': [
             'ipsv = ips_vagrant.cli:cli'

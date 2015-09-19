@@ -1,2 +1,3 @@
 recursive-include ips_vagrant/config *.conf
+recursive-include ips_vagrant/generators/templates *.tpl
 include ips_vagrant/alembic.ini
