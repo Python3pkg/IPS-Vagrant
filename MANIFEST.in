@@ -1,1 +1,2 @@
 recursive-include ips_vagrant/config *.conf
+include ips_vagrant/alembic.ini

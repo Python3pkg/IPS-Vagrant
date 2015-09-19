@@ -14,11 +14,11 @@ setup(
         'License :: OSI Approved :: MIT License',
     ],
     packages=find_packages(),
-    package_data={'ips_vagrant': ['config/*.conf']},
+    package_data={'ips_vagrant': ['config/*.conf', 'alembic.ini']},
     entry_points={
         'console_scripts': [
             'ipsv = ips_vagrant.cli:cli'
         ]
     },
-    requires=['beautifulsoup4', 'mechanize', 'click', 'requests', 'jinja2']
+    requires=['beautifulsoup4', 'mechanize', 'click', 'requests', 'jinja2', 'alembic']
 )

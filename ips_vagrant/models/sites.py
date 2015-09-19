@@ -1,4 +1,7 @@
 # coding: utf-8
+import os
+import ips_vagrant
+from ConfigParser import ConfigParser
 from sqlalchemy import Column, Integer, Text, ForeignKey, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -34,7 +37,10 @@ class Site(Base):
 
 # Create an engine that stores data in the local directory's
 # sqlalchemy_example.db file.
-engine = create_engine('sqlite:///dev/share/sites.db')
+_cfg = ConfigParser()
+_cfg.read(os.path.join(os.path.dirname(os.path.realpath(ips_vagrant.__file__)), 'config/ipsv.conf'))
+engine = create_engine("sqlite:////{path}"
+                       .format(path=os.path.join(_cfg.get('Paths', 'Data'), 'sites.db')))
 # Bind the engine to the metadata of the Base class so that the
 # declaratives can be accessed through a DBSession instance
 Base.metadata.bind = engine
