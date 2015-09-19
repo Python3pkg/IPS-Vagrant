@@ -20,7 +20,8 @@ def cli(ctx):
             os.makedirs(d, 0o755)
 
     click.echo('Copying IPS Vagrant configuration files..')
-    ctx.config.write('/etc/ipsv/ipsv.conf')
+    with open('/etc/ipsv/ipsv.conf', 'w+') as f:
+        ctx.config.write(f)
 
     # Update the system
     click.echo('Updating package cache..')
