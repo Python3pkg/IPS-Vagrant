@@ -7,7 +7,7 @@ from sqlalchemy.sql import collate
 from ips_vagrant.models.sites import Domain, Site
 from ips_vagrant.scraper import Licenses, Version
 from ips_vagrant.cli import pass_context, Context
-from ips_vagrant.generator.nginx import ServerBlock
+from ips_vagrant.generators.nginx import ServerBlock
 
 
 @click.command('new', short_help='Creates a new IPS installation.')
