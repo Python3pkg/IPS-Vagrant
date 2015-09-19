@@ -2,6 +2,9 @@ import os
 import logging
 import apt
 import click
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+from alembic.context import EnvironmentContext
 from ips_vagrant.cli import pass_context, Context
 
 
@@ -11,6 +14,18 @@ def cli(ctx):
     """Run setup after a fresh Vagrant installation."""
     log = logging.getLogger('ipsv.setup')
     assert isinstance(ctx, Context)
+
+    # Set up alembic
+    config = Config(os.path.join(ctx.basedir, 'alembic.ini'))
+    config.set_main_option("sqlalchemy.url", "sqlite:////{path}"
+                           .format(path=os.path.join(ctx.config.get('Paths', 'Data'), 'sites.db')))
+    script = ScriptDirectory.from_config(config)
+
+    with EnvironmentContext(
+        config,
+        script,
+    ):
+        script.run_env()
 
     # Create our package directories
     click.echo('Creating IPS Vagrant system directories..')
