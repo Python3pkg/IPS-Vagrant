@@ -7,8 +7,8 @@ import logging
 import zipfile
 import tempfile
 import subprocess
-from urlparse import urlparse
 from sqlalchemy.sql import collate
+from ips_vagrant.common import domain_parse
 from ips_vagrant.models.sites import Domain, Site
 from ips_vagrant.scraper import Licenses, Version
 from ips_vagrant.cli import pass_context, Context
@@ -70,18 +70,9 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
 
     # Parse the specific domain and make sure it's valid
     log.debug('Parsing domain name: %s', dname)
-    dname = dname.lower()
-    if not dname.startswith('http://') and not dname.startswith('https://'):
-        dname = '{schema}{host}'.format(schema='http://', host=dname)
-    dname = urlparse(dname)
-    if not dname.hostname:
-        raise Exception('Invalid domain provided')
-
+    dname = domain_parse(dname)
     if not ssl:
         ssl = dname.scheme == 'https'
-
-    # Strip www prefix
-    dname = dname.hostname.lstrip('www.') if dname.hostname.startswith('www.') else dname.hostname
     log.debug('Domain name parsed: %s', dname)
 
     # Fetch the domain entry if it already exists
