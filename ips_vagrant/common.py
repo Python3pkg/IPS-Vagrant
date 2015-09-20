@@ -14,7 +14,6 @@ def domain_parse(url):
     if not url.hostname:
         raise ValueError('Invalid domain provided')
 
-    # Strip www prefix
-    url.hostname = url.hostname.lstrip('www.')
-
+    # Strip www prefix any additional URL data
+    url = '{scheme}://{host}'.format(scheme=url.scheme, host=url.hostname.lstrip('www.'))
     return url
