@@ -205,5 +205,5 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
             for filename in dirnames:
                 os.chmod(os.path.join(dirname, filename), 0o777)
 
-        shutil.move(os.path.join(site.root, 'conf_global.dist.php'), os.path.join(site.root, 'conf_global.php'))
-        os.chmod(os.path.join(site.root, 'conf_global.php'), 0o777)
+    shutil.move(os.path.join(site.root, 'conf_global.dist.php'), os.path.join(site.root, 'conf_global.php'))
+    os.chmod(os.path.join(site.root, 'conf_global.php'), 0o777)
