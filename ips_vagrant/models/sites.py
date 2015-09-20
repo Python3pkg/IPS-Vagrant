@@ -1,5 +1,6 @@
 # coding: utf-8
 import os
+import re
 import logging
 import sqlahelper
 import ips_vagrant
@@ -52,8 +53,16 @@ class Site(Base):
     ssl = Column(Integer, server_default=text("0"))
     spdy = Column(Integer, server_default=text("0"))
     gzip = Column(Integer, server_default=text("1"))
+    db_host = Column(Text, nullable=True)
+    db_name = Column(Text, nullable=True)
+    db_user = Column(Text, nullable=True)
+    db_pass = Column(Text, nullable=True)
     enabled = Column(Integer, server_default=text("0"))
     domain = relationship("Domain")
+
+    @classmethod
+    def slug(cls):
+        return re.sub('[^0-9a-zA-Z_-]+', '_', cls.name.lower())
 
 
 # Create an engine that stores data in the local directory's
