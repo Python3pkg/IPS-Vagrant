@@ -1,7 +1,11 @@
+import click
 import string
 import random
 import logging
+import json
+import requests
 from hashlib import md5
+from urllib import urlencode
 from bs4 import BeautifulSoup
 from mechanize import Browser
 from sqlalchemy import create_engine
@@ -105,7 +109,8 @@ class Installer(object):
         db_pass = rand_pass
         self.mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=db_name))
         self.mysql.execute('CREATE DATABASE `{db}`'.format(db=db_name))
-        self.mysql.execute("GRANT ALL ON {db}.* TO '{u}' IDENTIFIED BY '{p}'".format(db=db_name, u=db_user, p=db_pass))
+        self.mysql.execute("GRANT ALL ON {db}.* TO '{u}'@'localhost' IDENTIFIED BY '{p}'"
+                           .format(db=db_name, u=db_user, p=db_pass))
 
         self.site.db_host = 'localhost'
         self.site.db_name = db_name
@@ -122,6 +127,59 @@ class Installer(object):
 
     def admin(self):
         self._check_title(self.browser.title())
+        self.browser.select_form(nr=0)
+
+        self.browser.form['admin_user'] = 'makoto'  # click.prompt('Admin display name')
+        password = 'makoto'  # click.prompt('Admin password', confirmation_prompt='Confirm admin password')
+        self.browser.form['admin_pass1'] = password
+        self.browser.form['admin_pass2'] = password
+        self.browser.form['admin_email'] = 'makoto@makoto.io'  # click.prompt('Admin email')
+        self.browser.submit()
+        self.install()
+
+    def install(self):
+        self._check_title(self.browser.title())
+        continue_link = next(self.browser.links(text_regex='Start Installation'))
+        self.browser.follow_link(continue_link)
+
+        rsoup = BeautifulSoup(self.browser.response().read())
+        cj = self.browser._ua_handlers['_cookies'].cookiejar
+        mr_link = rsoup.find('div', {'class': 'ipsMultipleRedirect'})['data-url']
+        # mr_link = mr_link.encode('UTF-8')
+        mr_link += '&' + urlencode({'mr': 'MA=='})
+        self.log.debug('MultipleRedirect link: %s', mr_link)
+
+        s = requests.Session()
+        s.headers.update({'X-Requested-With': 'XMLHttpRequest'})
+        s.cookies.update(cj)
+        r = s.get(mr_link)
+        j = json.loads(r.text)
+
+        while True:
+            mr_link += '&' + urlencode({'mr': j[0]})
+
+            try:
+                stage = j[1]
+            except IndexError:
+                stage = 'Complete'
+
+            try:
+                progress = j[2]
+            except IndexError:
+                progress = 0
+
+            r = s.get(mr_link)
+            j = json.loads(r.text)
+            self.log.debug('MultipleRedirect JSON response: %s', str(j))
+
+            if 'redirect' in j:
+                break
+
+        self.log.info('Finalizing installation')
+        r = s.get(j['redirect'])
+
+        with open('output.html', 'w') as f:
+            f.write(r.text)
 
 
 class InstallationError(Exception):
