@@ -31,12 +31,29 @@ class Installer(object):
         @rtype: bool
         """
         self.log.debug('Starting the installation process')
-        self.submit_license()
+        self.system_check()
 
-    def submit_license(self):
+    def system_check(self):
         self.browser.open(self.url)
         self.log.info('Installation page loaded: %s', self.browser.title())
+        rsoup = BeautifulSoup(self.browser.response().read())
 
+        # Check for any errors
+        errors = []
+        for ul in rsoup.find_all('ul', {'class': 'ipsList_checks'}):
+            for li in ul.find_all('li', {'class': 'fail'}):
+                errors.append(li.text)
+
+        if errors:
+            raise InstallationError(errors)
+
+        # Continue
+        continue_link = next(self.browser.links(text_regex='Continue'))
+        self.browser.follow_link(continue_link)
+        self.license()
+
+    def license(self):
+        self.log.info('Installation page loaded: %s', self.browser.title())
         self.browser.select_form(nr=0)
 
         # Set the fields
@@ -52,9 +69,22 @@ class Installer(object):
         rsoup = BeautifulSoup(self.browser.response().read())
 
         # If we're still on the license page, get our error
-        if rsoup.find('h1', {'class': 'ipsType_pageTitle'}).text == 'Step: License':
+        title = rsoup.find('h1', {'class': 'ipsType_pageTitle'}).text.encode('UTF-8').strip()
+        if title == 'Step: License':
             error = rsoup.find('li', id='license_lkey').find('span', {'class': 'ipsType_warning'}).text
             raise InstallationError(error)
+
+        self.applications()
+
+    def applications(self):
+        self.log.info('Installation page loaded: %s', self.browser.title())
+        # TODO: Make this configurable
+        self.browser.select_form(nr=0)
+        self.browser.submit()
+        self.server_details()
+
+    def server_details(self):
+        self.log.info('Installation page loaded: %s', self.browser.title())
 
 
 class InstallationError(Exception):
