@@ -1,8 +1,7 @@
-import os
 import logging
 import requests
-import cookielib
 from mechanize import Browser
+from ips_vagrant.common import cookiejar
 
 
 class Login(object):
@@ -25,19 +24,8 @@ class Login(object):
         # Debug log
         self.log = logging.getLogger('ipsv.login')
 
-        # Ready our CookieJar, loading a saved session if available
-        spath = os.path.join(ctx.config.get('Paths', 'Data'), 'session.txt')
-        self.cookiejar = cookielib.LWPCookieJar(spath)
-        self.cookies = {}
-
-        self.log.debug('Attempting to load session file: %s', spath)
-        if os.path.exists(spath):
-            try:
-                self.cookiejar.load()
-                self.cookies = {cookie.name: cookie.value for cookie in self.cookiejar}
-                self.log.info('Successfully loaded a saved login session')
-            except cookielib.LoadError as e:
-                self.log.warn('Session / cookie file exists, but could not be loaded', exc_info=e)
+        self.cookiejar = cookiejar()
+        self.cookies = {cookie.name: cookie.value for cookie in self.cookiejar}
 
         self.browser = Browser()
         self.browser.set_cookiejar(self.cookiejar)
