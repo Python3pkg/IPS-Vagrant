@@ -197,7 +197,7 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     
     for wdir in writeable_dirs:
         log.debug('Setting file permissions in %s', wdir)
-        os.chmod(wdir, 0o777)
+        os.chmod(os.path.join(site.root, wdir), 0o777)
         for dirname, dirnames, filenames in os.walk(os.path.join(site.root, wdir)):
             for filename in filenames:
                 os.chmod(os.path.join(dirname, filename), 0o666)
