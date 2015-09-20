@@ -1,6 +1,8 @@
 import os
 import click
 import logging
+import pkgutil
+import importlib
 from ConfigParser import ConfigParser
 from ips_vagrant.scraper import Login
 from ips_vagrant.models.sites import DBSession
@@ -82,12 +84,10 @@ class IpsvCLI(click.MultiCommand):
         @type   ctx:    Context
         @rtype: list
         """
-        rv = []
-        for filename in os.listdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'commands')):
-            if filename.endswith('.py') and filename.startswith('cmd_'):
-                rv.append(filename[4:-3])
-        rv.sort()
-        return rv
+        commands_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'commands')
+        command_list = [name for __, name, ispkg in pkgutil.iter_modules([commands_path]) if ispkg]
+        command_list.sort()
+        return command_list
 
     def get_command(self, ctx, name):
         """
@@ -99,12 +99,13 @@ class IpsvCLI(click.MultiCommand):
         @rtype: object
         """
         try:
-            name = name.encode('ascii', 'replace')
-            mod = __import__('ips_vagrant.commands.cmd_' + name,
-                             None, None, ['cli'])
-        except ImportError:
+            # name = name.encode('ascii', 'replace')
+            # mod = __import__('ips_vagrant.commands.cmd_' + name,
+            #                  None, None, ['cli'])
+            mod = importlib.import_module('ips_vagrant.commands.{name}'.format(name=name))
+            return mod.cli
+        except (ImportError, AttributeError):
             return
-        return mod.cli
 
 
 pass_context = click.make_pass_decorator(Context, ensure=True)

@@ -27,7 +27,7 @@ class Version(object):
     def get(self):
         """
         Fetch the most recent IPS version(s) available for download
-        @return:
+        @rtype: VersionMeta
         """
         response = requests.get(self.license.license_url, cookies=self.cookiejar)
         self.log.debug('Response code: %s', response.status_code)
