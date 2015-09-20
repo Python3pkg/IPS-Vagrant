@@ -14,17 +14,6 @@ def cli(ctx):
     log = logging.getLogger('ipsv.setup')
     assert isinstance(ctx, Context)
 
-    # Set up alembic
-    # click.echo(os.path.join(ctx.basedir, 'alembic.ini'))
-    alembic_cfg = Config(os.path.join(ctx.basedir, 'alembic.ini'))
-    alembic_cfg.set_main_option("script_location", os.path.join(ctx.basedir, 'migrations'))
-    alembic_cfg.set_main_option("sqlalchemy.url", "sqlite:////{path}"
-                                .format(path=os.path.join(ctx.config.get('Paths', 'Data'), 'sites.db')))
-
-    command.current(alembic_cfg)
-    command.downgrade(alembic_cfg, 'base', True)
-    command.upgrade(alembic_cfg, 'head', True)
-
     # Create our package directories
     click.echo('Creating IPS Vagrant system directories..')
     dirs = ['/etc/ipsv', ctx.config.get('Paths', 'Data'), ctx.config.get('Paths', 'Log')]
@@ -35,6 +24,16 @@ def cli(ctx):
     click.echo('Copying IPS Vagrant configuration files..')
     with open('/etc/ipsv/ipsv.conf', 'w+') as f:
         ctx.config.write(f)
+
+    # Set up alembic
+    alembic_cfg = Config(os.path.join(ctx.basedir, 'alembic.ini'))
+    alembic_cfg.set_main_option("script_location", os.path.join(ctx.basedir, 'migrations'))
+    alembic_cfg.set_main_option("sqlalchemy.url", "sqlite:////{path}"
+                                .format(path=os.path.join(ctx.config.get('Paths', 'Data'), 'sites.db')))
+
+    command.current(alembic_cfg)
+    command.downgrade(alembic_cfg, 'base')
+    command.upgrade(alembic_cfg, 'head')
 
     # Update the system
     click.echo('Updating package cache..')
