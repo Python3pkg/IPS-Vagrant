@@ -13,6 +13,7 @@ def config():
     """
     cfg = ConfigParser()
     cfg.read(os.path.join(os.path.dirname(os.path.realpath(ips_vagrant.__file__)), 'config/ipsv.conf'))
+    return cfg
 
 
 def domain_parse(url):
