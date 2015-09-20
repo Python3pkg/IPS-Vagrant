@@ -75,16 +75,7 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
         ssl = dname.scheme == 'https'
     log.debug('Domain name parsed: %s', dname)
 
-    # Fetch the domain entry if it already exists
-    log.info('Checking if the domain %s has already been registered', dname)
-    domain = ctx.db.query(Domain).filter(Domain.name == dname).first()
-
-    # Otherwise create it now
-    if not domain:
-        log.info('Domain name does not yet exist, creating a new database entry')
-        domain = Domain(name=dname)
-        ctx.db.add(domain)
-        ctx.db.commit()
+    domain = Domain.get_or_create(dname)
 
     # Make sure this site does not already exist
     site = ctx.db.query(Site).filter(Site.domain == domain).filter(collate(Site.name, 'NOCASE') == name).count()

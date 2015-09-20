@@ -1,14 +1,18 @@
 # coding: utf-8
 import os
+import logging
+import sqlahelper
 import ips_vagrant
 from ConfigParser import ConfigParser
 from sqlalchemy import Column, Integer, Text, ForeignKey, text
-from sqlalchemy.ext.declarative import declarative_base
+# from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy import create_engine
 
 
-Base = declarative_base()
+# Base = declarative_base()
+Base = sqlahelper.get_base()
+Session = sqlahelper.get_session()
 metadata = Base.metadata
 
 
@@ -18,6 +22,23 @@ class Domain(Base):
     id = Column(Integer, primary_key=True)
     name = Column(Text, nullable=False)
     sites = relationship("Site")
+
+    @classmethod
+    def get_or_create(cls, dname):
+        Domain = cls
+        # Fetch the domain entry if it already exists
+        logging.getLogger('ipsv.sites.domain').debug('Checking if the domain %s has already been registered', dname)
+        domain = Session.query(Domain).filter(Domain.name == dname).first()
+
+        # Otherwise create it now
+        if not domain:
+            logging.getLogger('ipsv.sites.domain')\
+                .debug('Domain name does not yet exist, creating a new database entry')
+            domain = Domain(name=dname)
+            Session.add(domain)
+            Session.commit()
+
+        return domain
 
 
 class Site(Base):
