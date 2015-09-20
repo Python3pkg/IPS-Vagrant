@@ -60,9 +60,8 @@ class Site(Base):
     enabled = Column(Integer, server_default=text("0"))
     domain = relationship("Domain")
 
-    @classmethod
-    def slug(cls):
-        return re.sub('[^0-9a-zA-Z_-]+', '_', cls.name.lower())
+    def slug(self):
+        return re.sub('[^0-9a-zA-Z_-]+', '_', str(self.name).lower())
 
 
 # Create an engine that stores data in the local directory's

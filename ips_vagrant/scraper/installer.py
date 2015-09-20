@@ -98,7 +98,8 @@ class Installer(object):
         # Create the database
         slug = self.site.slug()
         db_name = 'ipsv_{slug}'.format(slug=slug)[:64]
-        db_user = 'ipsv_{md5}'.format(md5=md5(slug)[:11])  # MySQL usernames are limited to 16 characters max
+        # MySQL usernames are limited to 16 characters max
+        db_user = 'ipsv_{md5}'.format(md5=md5(self.site.domain.name + slug).hexdigest()[:11])
         rand_pass = ''.join(random.SystemRandom()
                             .choice(string.ascii_letters + string.digits) for _ in range(random.randint(16, 24)))
         db_pass = rand_pass
@@ -117,6 +118,7 @@ class Installer(object):
         self.browser.form['sql_pass'] = db_pass
         self.browser.form['sql_database'] = db_name
         self.browser.submit()
+        self.admin()
 
     def admin(self):
         self._check_title(self.browser.title())
