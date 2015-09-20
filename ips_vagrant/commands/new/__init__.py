@@ -10,9 +10,9 @@ import subprocess
 from sqlalchemy.sql import collate
 from ips_vagrant.common import domain_parse
 from ips_vagrant.models.sites import Domain, Site
-from ips_vagrant.scraper import Licenses, Version
 from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.generators.nginx import ServerBlock
+from ips_vagrant.scraper import Licenses, Version, Installer
 
 
 @click.command('new', short_help='Creates a new IPS installation.')
@@ -187,3 +187,7 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
 
     shutil.move(os.path.join(site.root, 'conf_global.dist.php'), os.path.join(site.root, 'conf_global.php'))
     os.chmod(os.path.join(site.root, 'conf_global.php'), 0o777)
+
+    # Run the installation
+    installer = Installer(ctx, site)
+    installer.start()
