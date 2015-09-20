@@ -3,9 +3,9 @@ import click
 import logging
 import pkgutil
 import importlib
+import sqlahelper
 from ConfigParser import ConfigParser
 from ips_vagrant.scraper import Login
-from ips_vagrant.models.sites import DBSession
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix='IPSV', max_content_width=100)
 
@@ -33,7 +33,7 @@ class Context(object):
     @property
     def db(self):
         if self.database is NotImplemented:
-            self.database = DBSession()
+            self.database = sqlahelper.get_session()
 
         return self.database
 

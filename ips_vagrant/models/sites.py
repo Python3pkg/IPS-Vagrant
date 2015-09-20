@@ -26,6 +26,7 @@ class Domain(Base):
     @classmethod
     def get_or_create(cls, dname):
         Domain = cls
+        dname = dname.hostname if hasattr(dname, 'hostname') else dname
         # Fetch the domain entry if it already exists
         logging.getLogger('ipsv.sites.domain').debug('Checking if the domain %s has already been registered', dname)
         domain = Session.query(Domain).filter(Domain.name == dname).first()
@@ -36,7 +37,6 @@ class Domain(Base):
                 .debug('Domain name does not yet exist, creating a new database entry')
             domain = Domain(name=dname)
             Session.add(domain)
-            Session.commit()
 
         return domain
 
@@ -65,5 +65,3 @@ engine = create_engine("sqlite:////{path}"
 # Bind the engine to the metadata of the Base class so that the
 # declaratives can be accessed through a DBSession instance
 Base.metadata.bind = engine
-
-DBSession = sessionmaker(bind=engine)

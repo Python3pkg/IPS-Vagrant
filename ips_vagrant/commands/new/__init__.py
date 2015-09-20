@@ -95,13 +95,11 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     site = Site(name=name, domain=domain, root=root, license_key=lmeta.license_key, ssl=ssl, spdy=spdy, gzip=gzip,
                 enabled=enable)
     ctx.db.add(site)
-    ctx.db.commit()
 
     # If our new site was enabled, we need to disable any other sites utilizing this domain
     if site.enabled:
         log.debug('Disabling all other sites under the domain %s', domain.name)
         ctx.db.query(Site).filter(Site.id != site.id).filter(Site.domain == domain).update({'enabled': 0})
-        ctx.db.commit()
 
     # Generate our server block configuration
     server_block = ServerBlock(site)
