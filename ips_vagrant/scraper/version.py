@@ -57,14 +57,21 @@ class VersionMeta(object):
         self.log = logging.getLogger('ipsv.scraper.version')
 
         self._parse_form()
-        self._check()
+        self.check()
 
     def _parse_form(self):
+        """
+        Parse HTML form data
+        """
         self.version = self.form.find('label', {'for': 'version_latest'}).text
         self.log.info('Latest IPS version: %s', self.version)
         self._action = self.form.get('action')
 
-    def _check(self):
+    def check(self):
+        """
+        Check if we have already downloaded this version (and save its path if we have)
+        @type:  bool
+        """
         filename = '{fn}.zip'.format(fn=os.path.join(self._vdir, self.version))
         if os.path.isfile(filename):
             self.log.info('Version {v} already downloaded'.format(v=self.version))
@@ -75,6 +82,11 @@ class VersionMeta(object):
         return False
 
     def download(self):
+        """
+        Download the latest IPS release
+        @return:    Download file path
+        @rtype:     str
+        """
         # Submit a download request and test the response
         response = requests.post(self._action, {'version': 'latest'}, cookies=self.cookiejar, stream=True)
         if response.status_code != 200:
