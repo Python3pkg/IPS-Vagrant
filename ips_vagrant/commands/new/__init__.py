@@ -114,6 +114,10 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     server_block = ServerBlock(site)
 
     server_config_path = os.path.join(ctx.config.get('Paths', 'NginxSitesAvailable'), domain.name)
+    if not os.path.exists(server_config_path):
+        log.debug('Creating new configuration path: %s', server_config_path)
+        os.makedirs(server_config_path, 0o755)
+
     server_config_path = os.path.join(server_config_path, '{fn}.conf'.format(fn=slug))
     if os.path.exists(server_config_path):
         log.warn('Server block configuration file already exists, overwriting: %s', server_config_path)

@@ -1,7 +1,7 @@
 server {
     # Define the server block
     listen 80;
-    server_name {{ site.domain.name }}{% for extra_domain in site.get_extras() %} {{ extra_domain }}{% endfor %};
+    server_name {{ site.domain.name }}{% for extra_domain in site.domain.get_extras() %} {{ extra_domain }}{% endfor %};
     root "{{ site.root }}";
 
     index index.php;

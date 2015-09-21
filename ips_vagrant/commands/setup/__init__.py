@@ -69,5 +69,5 @@ def cli(ctx):
     cache.commit()
 
     log.debug('Writing setup lock file')
-    with open(os.path.join(ctx.config.get('Paths', 'Data'), 'setup.lck')) as f:
+    with open(os.path.join(ctx.config.get('Paths', 'Data'), 'setup.lck'), 'w') as f:
         f.write('1')
