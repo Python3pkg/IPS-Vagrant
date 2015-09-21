@@ -34,21 +34,29 @@ from ips_vagrant.scraper import Licenses, Version, Installer
               help='Run the IPS installation automatically after setup. (Default: True)')
 @pass_context
 def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, install):
-    """Creates a new installation of Invision Power Suite."""
+    """
+    Downloads and installs a new instance of the latest Invision Power Suite release.
+    """
     assert isinstance(ctx, Context)
     login_session = ctx.get_login()
     log = logging.getLogger('ipsv.new')
 
     # Prompt for our desired license
     def get_license():
+        """
+        Prompt the user for a license selection
+        @rtype: ips_vagrant.scraper.licenses.LicenseMeta
+        """
         licenses = Licenses(login_session).get()
         user_license = license_key or ctx.config.get('User', 'LicenseKey')
 
+        # If we already have a license key saved, skip the prompt and use it instead
         if user_license:
             licenses = {license.license_key: license for license in licenses}
             if user_license in licenses:
                 return licenses[user_license]
 
+        # Ask the user to select a license key
         opt = ctx.choice([
             (key, '{u} ({k})'.format(u=license.community_url, k=license.license_key))
             for key, license in enumerate(licenses)
@@ -64,6 +72,7 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
 
         return license
 
+    # Get the latest IPS release
     lmeta = get_license()
     version = Version(ctx, login_session, lmeta).get()
     filename = version.filename if version.filename and cache else version.download()
@@ -85,8 +94,8 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
                         .format(s=name, d=dname))
 
     # Construct the HTTP path
-    dir_name = re.sub('[^0-9a-zA-Z_-]+', '_', name.lower())
-    root = os.path.abspath(os.path.join(ctx.config.get('Paths', 'HttpRoot'), domain.name, dir_name))
+    slug = re.sub('[^0-9a-zA-Z_-]+', '_', name.lower())
+    root = os.path.abspath(os.path.join(ctx.config.get('Paths', 'HttpRoot'), domain.name, slug))
     if not os.path.exists(root):
         log.debug('Creating HTTP root directory: %s', root)
         os.makedirs(root, 0o755)
@@ -105,11 +114,7 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     server_block = ServerBlock(site)
 
     server_config_path = os.path.join(ctx.config.get('Paths', 'NginxSitesAvailable'), domain.name)
-    if not os.path.exists(server_config_path):
-        log.debug('Creating new configuration path: %s', server_config_path)
-        os.makedirs(server_config_path, 0o755)
-
-    server_config_path = os.path.join(server_config_path, '{fn}.conf'.format(fn=dir_name))
+    server_config_path = os.path.join(server_config_path, '{fn}.conf'.format(fn=slug))
     if os.path.exists(server_config_path):
         log.warn('Server block configuration file already exists, overwriting: %s', server_config_path)
         os.remove(server_config_path)

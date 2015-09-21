@@ -10,13 +10,16 @@ from ips_vagrant.cli import pass_context, Context
 @click.command('setup', short_help='Run setup after a fresh Vagrant installation.')
 @pass_context
 def cli(ctx):
-    """Run setup after a fresh Vagrant installation."""
+    """
+    Run setup after a fresh Vagrant installation.
+    """
     log = logging.getLogger('ipsv.setup')
     assert isinstance(ctx, Context)
 
     # Create our package directories
     click.echo('Creating IPS Vagrant system directories..')
-    dirs = ['/etc/ipsv', ctx.config.get('Paths', 'Data'), ctx.config.get('Paths', 'Log')]
+    dirs = ['/etc/ipsv', ctx.config.get('Paths', 'Data'), ctx.config.get('Paths', 'Log'),
+            ctx.config.get('Paths', 'NginxSitesAvailable'), ctx.config.get('Paths', 'NginxSitesEnabled')]
     for d in dirs:
         if not os.path.exists(d):
             os.makedirs(d, 0o755)
