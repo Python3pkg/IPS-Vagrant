@@ -6,18 +6,19 @@ import sqlahelper
 import ips_vagrant
 from ConfigParser import ConfigParser
 from sqlalchemy import Column, Integer, Text, ForeignKey, text
-# from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 
 
-# Base = declarative_base()
 Base = sqlahelper.get_base()
 Session = sqlahelper.get_session()
 metadata = Base.metadata
 
 
 class Domain(Base):
+    """
+    Domain maps
+    """
     __tablename__ = 'domains'
 
     id = Column(Integer, primary_key=True)
@@ -26,6 +27,12 @@ class Domain(Base):
 
     @classmethod
     def get_or_create(cls, dname):
+        """
+        Get the requested domain, or create it if it doesn't exist already
+        @param  dname:  Domain name
+        @type   dname:  str
+        @rtype: Domain
+        """
         Domain = cls
         dname = dname.hostname if hasattr(dname, 'hostname') else dname
         # Fetch the domain entry if it already exists
@@ -43,6 +50,9 @@ class Domain(Base):
 
 
 class Site(Base):
+    """
+    IPS installation
+    """
     __tablename__ = 'sites'
 
     id = Column(Integer, primary_key=True)
@@ -61,15 +71,15 @@ class Site(Base):
     domain = relationship("Domain")
 
     def slug(self):
+        """
+        Get the Site's slug (for file paths, URL's, etc.)
+        @rtype: str
+        """
         return re.sub('[^0-9a-zA-Z_-]+', '_', str(self.name).lower())
 
 
-# Create an engine that stores data in the local directory's
-# sqlalchemy_example.db file.
 _cfg = ConfigParser()
 _cfg.read(os.path.join(os.path.dirname(os.path.realpath(ips_vagrant.__file__)), 'config/ipsv.conf'))
 engine = create_engine("sqlite:////{path}"
                        .format(path=os.path.join(_cfg.get('Paths', 'Data'), 'sites.db')))
-# Bind the engine to the metadata of the Base class so that the
-# declaratives can be accessed through a DBSession instance
 Base.metadata.bind = engine
