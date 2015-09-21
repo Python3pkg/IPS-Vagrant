@@ -165,7 +165,7 @@ class Installer(object):
             try:
                 stage = j[1]
             except IndexError:
-                stage = 'Complete'
+                stage = 'Installation complete!'
 
             try:
                 progress = round(float(j[2]))
@@ -175,7 +175,7 @@ class Installer(object):
             r = s.get(mr_link)
             j = json.loads(r.text)
             self.log.debug('MultipleRedirect JSON response: %s', str(j))
-            pbar.update(min([progress, 100]))
+            pbar.update(min([progress, 100]), stage)
 
             if 'redirect' in j:
                 pbar.finish()

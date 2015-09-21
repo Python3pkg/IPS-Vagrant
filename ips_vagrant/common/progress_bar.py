@@ -23,6 +23,12 @@ class ProgressBar(progressbar.ProgressBar):
         h, w = array('h', ioctl(self.fd, termios.TIOCGWINSZ, '\0' * 8))[:2]
         self.term_width = min([w, self.max_term_width])
 
+    def update(self, value=None, label=None):
+        if label:
+            self.label = label
+
+        super(ProgressBar, self).update(value)
+
 
 class Label(progressbar.Widget):
     """
