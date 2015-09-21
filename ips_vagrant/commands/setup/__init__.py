@@ -16,6 +16,10 @@ def cli(ctx):
     log = logging.getLogger('ipsv.setup')
     assert isinstance(ctx, Context)
 
+    lock_path = os.path.join(ctx.config.get('Paths', 'Data'), 'setup.lck')
+    if os.path.exists(lock_path):
+        raise Exception('Setup is locked, please remove the setup lock file to continue')
+
     # Create our package directories
     click.echo('Creating IPS Vagrant system directories..')
     dirs = ['/etc/ipsv', ctx.config.get('Paths', 'Data'), ctx.config.get('Paths', 'Log'),
@@ -63,3 +67,7 @@ def cli(ctx):
 
     log.info('Committing package cache')
     cache.commit()
+
+    log.debug('Writing setup lock file')
+    with open(os.path.join(ctx.config.get('Paths', 'Data'), 'setup.lck')) as f:
+        f.write('1')
