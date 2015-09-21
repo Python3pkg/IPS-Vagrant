@@ -19,8 +19,6 @@ class Context(object):
         self.config = ConfigParser()
         self.config_path = None
         self.log = None
-        # self.license = None
-        # self.cache = None
         self.database = NotImplemented
         self.basedir = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
@@ -28,20 +26,34 @@ class Context(object):
         self._login = None
 
     def setup(self):
+        """
+        Run deferred __init__ tasks
+        """
         self._login = Login(self)
 
     @property
     def db(self):
+        """
+        Get a loaded database session
+        """
         if self.database is NotImplemented:
             self.database = sqlahelper.get_session()
 
         return self.database
 
     def load_config(self, path):
+        """
+        (Re-)load the configuration file
+        """
         self.config_path = path
         self.config.read(self.config_path)
 
     def get_login(self, use_session=True):
+        """
+        Get an active login session
+        @param  use_session:    Use a saved session file if available
+        @type   use_session:    bool
+        """
         # Should we try and return an existing login session?
         if use_session and self._login.check():
             self.cookiejar = self._login.cookiejar
@@ -58,19 +70,6 @@ class Context(object):
             self.cookiejar = cookiejar
 
         return cookiejar
-
-    def choice(self, opts, default=1, text='Please make a choice'):
-        opts_len = len(opts)
-        opts_enum = enumerate(opts, 1)
-        opts = list(opts)
-
-        for key, opt in opts_enum:
-            click.echo('[{k}] {o}'.format(k=key, o=opt[1] if isinstance(opt, tuple) else opt))
-
-        click.echo('-' * 12)
-        opt = click.prompt(text, default, type=click.IntRange(1, opts_len))
-        opt = opts[opt - 1]
-        return opt[0] if isinstance(opt, tuple) else opt
 
 
 # noinspection PyAbstractClass
@@ -95,13 +94,9 @@ class IpsvCLI(click.MultiCommand):
         @type   ctx:    Context
         @param  name:   Command name
         @type   name:   str
-
         @rtype: object
         """
         try:
-            # name = name.encode('ascii', 'replace')
-            # mod = __import__('ips_vagrant.commands.cmd_' + name,
-            #                  None, None, ['cli'])
             mod = importlib.import_module('ips_vagrant.commands.{name}'.format(name=name))
             return mod.cli
         except (ImportError, AttributeError):
@@ -143,6 +138,4 @@ def cli(ctx, verbose, config):
         ctx.config_path = os.path.join(ctx.basedir, 'config', 'ipsv.conf')
         ctx.log.debug('Loading default configuration: %s', ctx.config_path)
 
-    # ctx.license = license
-    # ctx.cache = cache
     ctx.setup()

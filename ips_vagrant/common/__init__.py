@@ -1,4 +1,5 @@
 import os
+import click
 import logging
 import cookielib
 import ips_vagrant
@@ -14,6 +15,27 @@ def config():
     cfg = ConfigParser()
     cfg.read(os.path.join(os.path.dirname(os.path.realpath(ips_vagrant.__file__)), 'config/ipsv.conf'))
     return cfg
+
+
+def choice(opts, default=1, text='Please make a choice.'):
+    """
+    Prompt the user to select an option
+    @param  opts:   List of tuples containing options in (key, value) format - value is optional
+    @type   opts:   list of tuple
+    @param  text:   Prompt text
+    @type   text:   str
+    """
+    opts_len = len(opts)
+    opts_enum = enumerate(opts, 1)
+    opts = list(opts)
+
+    for key, opt in opts_enum:
+        click.echo('[{k}] {o}'.format(k=key, o=opt[1] if isinstance(opt, tuple) else opt))
+
+    click.echo('-' * 12)
+    opt = click.prompt(text, default, type=click.IntRange(1, opts_len))
+    opt = opts[opt - 1]
+    return opt[0] if isinstance(opt, tuple) else opt
 
 
 def domain_parse(url):

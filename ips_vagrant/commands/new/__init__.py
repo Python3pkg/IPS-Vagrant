@@ -8,9 +8,9 @@ import zipfile
 import tempfile
 import subprocess
 from sqlalchemy.sql import collate
-from ips_vagrant.common import domain_parse
 from ips_vagrant.models.sites import Domain, Site
 from ips_vagrant.cli import pass_context, Context
+from ips_vagrant.common import domain_parse, choice
 from ips_vagrant.generators.nginx import ServerBlock
 from ips_vagrant.scraper import Licenses, Version, Installer
 
@@ -57,7 +57,7 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
                 return licenses[user_license]
 
         # Ask the user to select a license key
-        opt = ctx.choice([
+        opt = choice([
             (key, '{u} ({k})'.format(u=license.community_url, k=license.license_key))
             for key, license in enumerate(licenses)
         ], 1, 'Which license key would you like to use?')
