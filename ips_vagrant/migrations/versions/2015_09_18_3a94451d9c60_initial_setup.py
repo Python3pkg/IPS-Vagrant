@@ -27,6 +27,7 @@ def upgrade():
     op.create_table('sites',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.Text(), nullable=False),
+    sa.Column('slug', sa.Text(), nullable=False),
     sa.Column('domain_id', sa.Integer(), nullable=False),
     sa.Column('root', sa.Text(), nullable=False),
     sa.Column('license_key', sa.Text(), nullable=False),

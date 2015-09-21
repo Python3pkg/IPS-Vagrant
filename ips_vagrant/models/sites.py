@@ -68,7 +68,7 @@ class Site(Base):
     __tablename__ = 'sites'
 
     id = Column(Integer, primary_key=True)
-    _name = Column(Text, nullable=False)
+    _name = Column('name', Text, nullable=False)
     slug = Column(Text, nullable=False)
     domain_id = Column(Integer, ForeignKey('domains.id'), nullable=False)
     root = Column(Text, nullable=False)
