@@ -57,7 +57,7 @@ class Label(progressbar.Widget):
         # Fixed width label formatting
         value = value[:30]
         try:
-            padding = ' ' * (len(value) - 30)
+            padding = ' ' * (30 - len(value))
         except TypeError:
             padding = ''
 
