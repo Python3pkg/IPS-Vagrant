@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from mechanize import Browser
 from sqlalchemy import create_engine
 from ips_vagrant.common import cookiejar
+from ips_vagrant.common.progress_bar import ProgressBar
 
 
 class Installer(object):
@@ -149,6 +150,8 @@ class Installer(object):
         mr_link += '&' + urlencode({'mr': 'MA=='})
         self.log.debug('MultipleRedirect link: %s', mr_link)
 
+        pbar = ProgressBar(100, 'Running installation...')
+
         s = requests.Session()
         s.headers.update({'X-Requested-With': 'XMLHttpRequest'})
         s.cookies.update(cj)
@@ -171,8 +174,10 @@ class Installer(object):
             r = s.get(mr_link)
             j = json.loads(r.text)
             self.log.debug('MultipleRedirect JSON response: %s', str(j))
+            pbar.update(max([progress, 100]))
 
             if 'redirect' in j:
+                pbar.finish()
                 break
 
         self.log.info('Finalizing installation')
