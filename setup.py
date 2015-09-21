@@ -20,5 +20,5 @@ setup(
             'ipsv = ips_vagrant.cli:cli'
         ]
     },
-    requires=['beautifulsoup4', 'mechanize', 'click', 'requests', 'jinja2', 'alembic', 'sqlahelper']
+    requires=['beautifulsoup4', 'mechanize', 'click', 'requests', 'jinja2', 'alembic', 'sqlahelper', 'progressbar']
 )
