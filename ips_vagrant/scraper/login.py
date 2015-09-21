@@ -5,7 +5,9 @@ from ips_vagrant.common import cookiejar
 
 
 class Login(object):
-
+    """
+    IPS client area login class
+    """
     # Form constants
     LOGIN_URL = 'https://www.invisionpower.com/clients/index.php?app=core&module=global&section=login'
     TEST_URL = 'https://www.invisionpower.com/clients/index.php?app=nexus&module=clients&section=purchases'
@@ -44,6 +46,16 @@ class Login(object):
         return requests.get(self.TEST_URL, cookies=self.cookiejar).status_code == 200
 
     def process(self, username, password, remember=True):
+        """
+        Process a login request
+        @type   username:   str
+        @type   password:   str
+        @param  remember:   Save the login session to disk
+        @type   remember:   bool
+        @raise  BadLoginException:  Login request failed
+        @return:    Session cookies
+        @rtype:     cookielib.LWPCookieJar
+        """
         self.log.debug('Processing login request')
 
         self.browser.open(self.LOGIN_URL)
