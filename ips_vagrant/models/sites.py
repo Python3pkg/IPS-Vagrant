@@ -23,6 +23,7 @@ class Domain(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(Text, nullable=False)
+    extras = Column(Text, nullable=True)
     sites = relationship("Site")
 
     @classmethod
@@ -35,6 +36,7 @@ class Domain(Base):
         """
         Domain = cls
         dname = dname.hostname if hasattr(dname, 'hostname') else dname
+        extras = 'www.{dn}'.format(dn=dname)
         # Fetch the domain entry if it already exists
         logging.getLogger('ipsv.sites.domain').debug('Checking if the domain %s has already been registered', dname)
         domain = Session.query(Domain).filter(Domain.name == dname).first()
@@ -43,10 +45,20 @@ class Domain(Base):
         if not domain:
             logging.getLogger('ipsv.sites.domain')\
                 .debug('Domain name does not yet exist, creating a new database entry')
-            domain = Domain(name=dname)
+            domain = Domain(name=dname, extras=extras)
             Session.add(domain)
 
         return domain
+
+    def get_extras(self):
+        """
+        Get the extra associated domain names (e.g. www.dname.com)
+        @rtype: list
+        """
+        if self.extras:
+            return str(self.extras).split(',')
+
+        return []
 
 
 class Site(Base):
