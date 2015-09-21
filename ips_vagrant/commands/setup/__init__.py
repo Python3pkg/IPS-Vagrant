@@ -23,7 +23,8 @@ def cli(ctx):
     # Create our package directories
     click.echo('Creating IPS Vagrant system directories..')
     dirs = ['/etc/ipsv', ctx.config.get('Paths', 'Data'), ctx.config.get('Paths', 'Log'),
-            ctx.config.get('Paths', 'NginxSitesAvailable'), ctx.config.get('Paths', 'NginxSitesEnabled')]
+            ctx.config.get('Paths', 'NginxSitesAvailable'), ctx.config.get('Paths', 'NginxSitesEnabled'),
+            ctx.config.get('Paths', 'NginxSSL')]
     for d in dirs:
         if not os.path.exists(d):
             os.makedirs(d, 0o755)

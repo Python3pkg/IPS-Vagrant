@@ -31,6 +31,8 @@ def upgrade():
     sa.Column('root', sa.Text(), nullable=False),
     sa.Column('license_key', sa.Text(), nullable=False),
     sa.Column('ssl', sa.Integer(), server_default=sa.text(u'0'), nullable=True),
+    sa.Column('ssl_key', sa.Text(), nullable=True),
+    sa.Column('ssl_certificate', sa.Text(), nullable=True),
     sa.Column('spdy', sa.Integer(), server_default=sa.text(u'0'), nullable=True),
     sa.Column('gzip', sa.Integer(), server_default=sa.text(u'1'), nullable=True),
     sa.Column('enabled', sa.Integer(), server_default=sa.text(u'0'), nullable=True),

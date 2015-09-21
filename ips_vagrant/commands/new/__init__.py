@@ -12,6 +12,7 @@ from ips_vagrant.models.sites import Domain, Site
 from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.common import domain_parse, choice
 from ips_vagrant.generators.nginx import ServerBlock
+from ips_vagrant.common.ssl import CertificateFactory
 from ips_vagrant.scraper import Licenses, Version, Installer
 
 
@@ -80,7 +81,7 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     # Parse the specific domain and make sure it's valid
     log.debug('Parsing domain name: %s', dname)
     dname = domain_parse(dname)
-    if not ssl:
+    if ssl is None:
         ssl = dname.scheme == 'https'
     log.debug('Domain name parsed: %s', dname)
 
@@ -93,17 +94,16 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
         raise Exception('An installation named "{s}" has already been created for the domain {d}'
                         .format(s=name, d=dname))
 
-    # Construct the HTTP path
-    slug = re.sub('[^0-9a-zA-Z_-]+', '_', name.lower())
-    root = os.path.abspath(os.path.join(ctx.config.get('Paths', 'HttpRoot'), domain.name, slug))
-    if not os.path.exists(root):
-        log.debug('Creating HTTP root directory: %s', root)
-        os.makedirs(root, 0o755)
-
     # Create the site database entry
     site = Site(name=name, domain=domain, root=root, license_key=lmeta.license_key, ssl=ssl, spdy=spdy, gzip=gzip,
                 enabled=enable)
     ctx.db.add(site)
+
+    # Construct the HTTP path
+    root = os.path.abspath(os.path.join(ctx.config.get('Paths', 'HttpRoot'), domain.name, site.slug))
+    if not os.path.exists(root):
+        log.debug('Creating HTTP root directory: %s', root)
+        os.makedirs(root, 0o755)
 
     # If our new site was enabled, we need to disable any other sites utilizing this domain
     if site.enabled:
@@ -118,7 +118,7 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
         log.debug('Creating new configuration path: %s', server_config_path)
         os.makedirs(server_config_path, 0o755)
 
-    server_config_path = os.path.join(server_config_path, '{fn}.conf'.format(fn=slug))
+    server_config_path = os.path.join(server_config_path, '{fn}.conf'.format(fn=site.slug))
     if os.path.exists(server_config_path):
         log.warn('Server block configuration file already exists, overwriting: %s', server_config_path)
         os.remove(server_config_path)
@@ -126,6 +126,22 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     log.info('Writing Nginx server block configuration file')
     with open(server_config_path, 'w') as f:
         f.write(server_block.template)
+
+    # Generate SSL certificates if enabled
+    if ssl:
+        ssl_path = os.path.join(ctx.config.get('Paths', 'NginxSSL'), domain.name)
+        if not os.path.exists(server_config_path):
+            log.debug('Creating new SSL path: %s', ssl_path)
+            os.makedirs(ssl_path, 0o755)
+
+        sc = CertificateFactory(site).get()
+        site.ssl_key = sc.key
+        site.ssl_certificate = sc.certificate
+
+        with open(os.path.join(ssl_path, '{s}.key'.format(s=site.slug)), 'w') as f:
+            f.write(sc.key)
+        with open(os.path.join(ssl_path, '{s}.pem').format(s=site.slug), 'w') as f:
+            f.write(sc.certificate)
 
     # Create a symlink if this site is being enabled
     if site.enabled:

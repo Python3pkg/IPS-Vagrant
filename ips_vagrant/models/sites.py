@@ -68,11 +68,14 @@ class Site(Base):
     __tablename__ = 'sites'
 
     id = Column(Integer, primary_key=True)
-    name = Column(Text, nullable=False)
+    _name = Column(Text, nullable=False)
+    slug = Column(Text, nullable=False)
     domain_id = Column(Integer, ForeignKey('domains.id'), nullable=False)
     root = Column(Text, nullable=False)
     license_key = Column(Text, nullable=False)
     ssl = Column(Integer, server_default=text("0"))
+    ssl_key = Column(Text, nullable=True)
+    ssl_certificate = Column(Text, nullable=True)
     spdy = Column(Integer, server_default=text("0"))
     gzip = Column(Integer, server_default=text("1"))
     db_host = Column(Text, nullable=True)
@@ -82,12 +85,20 @@ class Site(Base):
     enabled = Column(Integer, server_default=text("0"))
     domain = relationship("Domain")
 
-    def slug(self):
+    @property
+    def name(self):
         """
-        Get the Site's slug (for file paths, URL's, etc.)
+        Get the sites name
         @rtype: str
         """
-        return re.sub('[^0-9a-zA-Z_-]+', '_', str(self.name).lower())
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        """
+        Generate the Site's slug (for file paths, URL's, etc.)
+        """
+        self.slug = re.sub('[^0-9a-zA-Z_-]+', '_', str(value).lower())
 
 
 _cfg = ConfigParser()
