@@ -151,6 +151,7 @@ class Installer(object):
         self.log.debug('MultipleRedirect link: %s', mr_link)
 
         pbar = ProgressBar(100, 'Running installation...')
+        pbar.start()
 
         s = requests.Session()
         s.headers.update({'X-Requested-With': 'XMLHttpRequest'})
@@ -167,14 +168,14 @@ class Installer(object):
                 stage = 'Complete'
 
             try:
-                progress = j[2]
+                progress = round(float(j[2]))
             except IndexError:
                 progress = 0
 
             r = s.get(mr_link)
             j = json.loads(r.text)
             self.log.debug('MultipleRedirect JSON response: %s', str(j))
-            pbar.update(max([progress, 100]))
+            pbar.update(min([progress, 100]))
 
             if 'redirect' in j:
                 pbar.finish()
