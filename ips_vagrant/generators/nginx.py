@@ -1,7 +1,7 @@
-from .generator import TemplateGenerator
+from .generator import GeneratorAbstract
 
 
-class ServerBlock(TemplateGenerator):
+class ServerBlock(GeneratorAbstract):
 
     def __init__(self, site):
         """
@@ -14,6 +14,10 @@ class ServerBlock(TemplateGenerator):
 
     @property
     def template(self):
+        """
+        @return:    Parsed template
+        @rtype:     str
+        """
         if not self._template:
             self._template = self.tpl.render(site=self.site)
 

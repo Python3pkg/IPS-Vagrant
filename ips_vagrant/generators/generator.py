@@ -2,8 +2,10 @@ from abc import ABCMeta, abstractproperty
 from jinja2 import Environment, PackageLoader
 
 
-class TemplateGenerator(object):
-
+class GeneratorAbstract(object):
+    """
+    Template file generator
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, template_path):
