@@ -160,7 +160,7 @@ class Installer(object):
         self.browser.select_form(nr=0)
 
         self.browser.form['admin_user'] = click.prompt('Admin display name')
-        password = click.prompt('Admin password', True, 'Confirm admin password')
+        password = click.prompt('Admin password', hide_input=True, confirmation_prompt='Confirm admin password')
         self.browser.form['admin_pass1'] = password
         self.browser.form['admin_pass2'] = password
         self.browser.form['admin_email'] = click.prompt('Admin email')
@@ -220,9 +220,17 @@ class Installer(object):
                 pbar.finish()
                 break
 
-        p = Echo('Finalizing installation...')
-        s.get(j['redirect'])
+        p = Echo('Finalizing...')
+        r = s.get(j['redirect'])
         p.done()
+
+        # Get the link to our community homepage
+        rsoup = BeautifulSoup(r.text)
+        click.echo('------')
+        click.secho(rsoup.find('h1', id='elInstaller_welcome').text.strip(), fg='yellow', bold=True)
+        click.secho(rsoup.find('p', {'class': 'ipsType_light'}).text.strip(), fg='yellow', dim=True)
+        link = rsoup.find('a', {'class': 'ipsButton_primary'}).get('href')
+        click.echo(click.style('Go to the suite: ', bold=True) + link + '\n')
 
 
 class InstallationError(Exception):
