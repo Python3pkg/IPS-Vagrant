@@ -8,6 +8,7 @@ import zipfile
 import tempfile
 import subprocess
 from sqlalchemy.sql import collate
+from ips_vagrant.common.progress import Echo
 from ips_vagrant.models.sites import Domain, Site
 from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.common import domain_parse, choice
@@ -75,8 +76,12 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
 
     # Get the latest IPS release
     lmeta = get_license()
+    p = Echo('Fetching IPS version information...')
     version = Version(ctx, login_session, lmeta).get()
+    p.done()
+    p = Echo('Downloading the most recent IPS release...')
     filename = version.filename if version.filename and cache else version.download()
+    p.done()
 
     # Parse the specific domain and make sure it's valid
     log.debug('Parsing domain name: %s', dname)
@@ -88,6 +93,7 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     domain = Domain.get_or_create(dname)
 
     # Make sure this site does not already exist
+    p = Echo('Constructing site data...')
     site = ctx.db.query(Site).filter(Site.domain == domain).filter(collate(Site.name, 'NOCASE') == name).count()
     if site:
         log.error('Site already exists')
@@ -97,8 +103,10 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     # Create the site database entry
     site = Site(name=name, domain=domain, license_key=lmeta.license_key, ssl=ssl, spdy=spdy, gzip=gzip, enabled=enable)
     ctx.db.add(site)
+    p.done()
 
     # Construct the HTTP path
+    p = Echo('Constructing paths and configuration files...')
     if not os.path.exists(site.root):
         log.debug('Creating HTTP root directory: %s', site.root)
         os.makedirs(site.root, 0o755)
@@ -124,9 +132,11 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     log.info('Writing Nginx server block configuration file')
     with open(server_config_path, 'w') as f:
         f.write(server_block.template)
+    p.done()
 
     # Generate SSL certificates if enabled
     if ssl:
+        p = Echo('Generating SSL certificate...')
         ssl_path = os.path.join(ctx.config.get('Paths', 'NginxSSL'), domain.name)
         if not os.path.exists(ssl_path):
             log.debug('Creating new SSL path: %s', ssl_path)
@@ -140,6 +150,7 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
             f.write(sc.key)
         with open(os.path.join(ssl_path, '{s}.pem').format(s=site.slug), 'w') as f:
             f.write(sc.certificate)
+        p.done()
 
     # Create a symlink if this site is being enabled
     if site.enabled:
@@ -167,10 +178,13 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
         os.symlink(server_config_path, symlink_path)
 
         # Restart Nginx
-        click.echo('Restarting Nginx')
-        subprocess.check_call(['/etc/init.d/nginx', 'restart'])
+        p = Echo('Restarting web server...')
+        FNULL = open(os.devnull, 'w')
+        subprocess.check_call(['/etc/init.d/nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
+        p.done()
 
     # Extract IPS setup files
+    p = Echo('Extracting setup files...')
     tmpdir = tempfile.mkdtemp('ips')
     setup_zip = os.path.join(tmpdir, 'setup.zip')
     setup_dir = os.path.join(tmpdir, 'setup')
@@ -194,8 +208,10 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
 
         log.info('Setup files moved to: %s', site.root)
     shutil.rmtree(tmpdir)
+    p.done()
 
     # Apply proper permissions
+    p = Echo('Setting file permissions...')
     writeable_dirs = ['uploads', 'plugins', 'applications', 'datastore']
     
     for wdir in writeable_dirs:
@@ -210,7 +226,10 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
 
     shutil.move(os.path.join(site.root, 'conf_global.dist.php'), os.path.join(site.root, 'conf_global.php'))
     os.chmod(os.path.join(site.root, 'conf_global.php'), 0o777)
+    p.done()
 
     # Run the installation
+    p = Echo('Initializing installer...')
     installer = Installer(ctx, site)
+    p.done()
     installer.start()

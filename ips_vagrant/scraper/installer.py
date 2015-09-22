@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from mechanize import Browser
 from sqlalchemy import create_engine
 from ips_vagrant.common import cookiejar
-from ips_vagrant.common.progress import ProgressBar
+from ips_vagrant.common.progress import ProgressBar, Echo
 
 
 class Installer(object):
@@ -60,6 +60,7 @@ class Installer(object):
         """
         self.browser.open(self.url)
         self._check_title(self.browser.title())
+        p = Echo('Running system check...')
         rsoup = BeautifulSoup(self.browser.response().read())
 
         # Check for any errors
@@ -73,6 +74,7 @@ class Installer(object):
 
         # Continue
         continue_link = next(self.browser.links(text_regex='Continue'))
+        p.done()
         self.browser.follow_link(continue_link)
         self.license()
 
@@ -80,6 +82,7 @@ class Installer(object):
         """
         Submit our license to IPS' servers
         """
+        p = Echo('Submitting license key...')
         self._check_title(self.browser.title())
         self.browser.select_form(nr=0)
 
@@ -92,6 +95,7 @@ class Installer(object):
         self.browser.submit()
         self.log.debug('Response code: %s', self.browser.response().code)
 
+        p.done()
         self.applications()
 
     def applications(self):
@@ -107,8 +111,10 @@ class Installer(object):
             raise InstallationError(error)
 
         # TODO: Make this configurable
+        p = Echo('Setting applications to install...')
         self.browser.select_form(nr=0)
         self.browser.submit()
+        p.done()
         self.server_details()
 
     def server_details(self):
@@ -116,6 +122,7 @@ class Installer(object):
         Input server details (database information, etc.)
         """
         self._check_title(self.browser.title())
+        p = Echo('Creating MySQL database...')
 
         # Create the database
         db_name = 'ipsv_{slug}'.format(slug=self.site.slug)[:64]
@@ -124,7 +131,7 @@ class Installer(object):
         rand_pass = ''.join(random.SystemRandom()
                             .choice(string.ascii_letters + string.digits) for _ in range(random.randint(16, 24)))
         db_pass = rand_pass
-        self.mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=db_name))
+        # self.mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=db_name))  # Returns a warning from sqlalchemy
         self.mysql.execute('CREATE DATABASE `{db}`'.format(db=db_name))
         self.mysql.execute("GRANT ALL ON {db}.* TO '{u}'@'localhost' IDENTIFIED BY '{p}'"
                            .format(db=db_name, u=db_user, p=db_pass))
@@ -142,6 +149,7 @@ class Installer(object):
         self.browser.form['sql_pass'] = db_pass
         self.browser.form['sql_database'] = db_name
         self.browser.submit()
+        p.done()
         self.admin()
 
     def admin(self):
@@ -152,11 +160,13 @@ class Installer(object):
         self.browser.select_form(nr=0)
 
         self.browser.form['admin_user'] = click.prompt('Admin display name')
-        password = click.prompt('Admin password', confirmation_prompt='Confirm admin password')
+        password = click.prompt('Admin password', True, 'Confirm admin password')
         self.browser.form['admin_pass1'] = password
         self.browser.form['admin_pass2'] = password
         self.browser.form['admin_email'] = click.prompt('Admin email')
+        p = Echo('Submitting admin information...')
         self.browser.submit()
+        p.done()
         self.install()
 
     def install(self):
@@ -210,8 +220,9 @@ class Installer(object):
                 pbar.finish()
                 break
 
-        self.log.info('Finalizing installation')
+        p = Echo('Finalizing installation...')
         s.get(j['redirect'])
+        p.done()
 
 
 class InstallationError(Exception):
