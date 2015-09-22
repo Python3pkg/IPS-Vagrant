@@ -6,6 +6,7 @@ from alembic import command
 from alembic.config import Config
 from ips_vagrant.common.progress import Echo
 from ips_vagrant.cli import pass_context, Context
+from ips_vagrant.generators.php5_fpm import FpmPoolConfig
 
 
 @click.command('setup', short_help='Run setup after a fresh Vagrant installation.')
@@ -74,7 +75,19 @@ def cli(ctx):
         p.done()
 
     log.info('Committing package cache')
+    p = Echo('Downloading and installing packages...')
     cache.commit()
+    p.done()
+
+    # php5-fpm configuration
+    p = Echo('Configuring php5-fpm...')
+    if os.path.isfile('/etc/php5/fpm/pool.d/www.conf'):
+        os.remove('/etc/php5/fpm/pool.d/www.conf')
+
+    fpm_config = FpmPoolConfig().template
+    with open('/etc/php5/fpm/pool.d/') as f:
+        f.write(fpm_config)
+    p.done()
 
     log.debug('Writing setup lock file')
     with open(os.path.join(ctx.config.get('Paths', 'Data'), 'setup.lck'), 'w') as f:
