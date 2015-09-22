@@ -57,8 +57,8 @@ server {
 
         ssl_session_cache     shared:SSL:10m;
         ssl_session_timeout   10m;
-        ssl_certificate       /etc/nginx/ssl/{{ site.domain }}/{{ site.slug }}.pem;
-        ssl_certificate_key   /etc/nginx/ssl/{{ site.domain }}/{{ site.slug }}.key;
+        ssl_certificate       /etc/nginx/ssl/{{ site.domain.name }}/{{ site.slug }}.pem;
+        ssl_certificate_key   /etc/nginx/ssl/{{ site.domain.name }}/{{ site.slug }}.key;
 
         index index.php;
         client_max_body_size 100m;

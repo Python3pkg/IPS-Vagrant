@@ -45,6 +45,7 @@ class Installer(object):
         self.log.info('Installation page loaded: %s', title)
         if self._previous_title and title == self._previous_title:
             raise InstallationError('Unexpected page error')
+        self._previous_title = title
 
     def start(self):
         """
