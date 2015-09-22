@@ -119,7 +119,7 @@ class Echo:
         self.color = color
         self.bold = bold
 
-        click.secho(' {msg} '.format(msg=message), nl=False, color=color, bold=bold)
+        click.secho(r' {msg} \r'.format(msg=message), nl=False, color=color, bold=bold)
 
     def done(self, status=OK):
         """

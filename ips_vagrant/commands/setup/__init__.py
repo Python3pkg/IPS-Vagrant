@@ -1,9 +1,10 @@
 import os
-import logging
 import apt
 import click
-from alembic.config import Config
+import logging
 from alembic import command
+from alembic.config import Config
+from ips_vagrant.common.progress import Echo
 from ips_vagrant.cli import pass_context, Context
 
 
@@ -21,17 +22,19 @@ def cli(ctx):
         raise Exception('Setup is locked, please remove the setup lock file to continue')
 
     # Create our package directories
-    click.echo('Creating IPS Vagrant system directories..')
+    p = Echo('Creating IPS Vagrant system directories...')
     dirs = ['/etc/ipsv', ctx.config.get('Paths', 'Data'), ctx.config.get('Paths', 'Log'),
             ctx.config.get('Paths', 'NginxSitesAvailable'), ctx.config.get('Paths', 'NginxSitesEnabled'),
             ctx.config.get('Paths', 'NginxSSL')]
     for d in dirs:
         if not os.path.exists(d):
             os.makedirs(d, 0o755)
+    p.done()
 
-    click.echo('Copying IPS Vagrant configuration files..')
+    p = Echo('Copying IPS Vagrant configuration files...')
     with open('/etc/ipsv/ipsv.conf', 'w+') as f:
         ctx.config.write(f)
+    p.done()
 
     # Set up alembic
     alembic_cfg = Config(os.path.join(ctx.basedir, 'alembic.ini'))
@@ -44,13 +47,15 @@ def cli(ctx):
     command.upgrade(alembic_cfg, 'head')
 
     # Update the system
-    click.echo('Updating package cache..')
+    p = Echo('Updating package cache...')
     cache = apt.Cache()
     cache.update()
     cache.open(None)
-    click.echo('Upgrading system packages..')
+    p.done()
+    p = Echo('Upgrading system packages...')
     cache.upgrade()
     cache.commit()
+    p.done()
 
     # Install our required packages
     requirements = ['nginx', 'php5-fpm', 'php5-curl', 'php5-gd', 'php5-imagick', 'php5-json', 'php5-mysql',
@@ -58,12 +63,13 @@ def cli(ctx):
 
     for requirement in requirements:
         # Make sure the package is available
+        p = Echo('Marking package {pkg} for installation'.format(pkg=requirement))
         if requirement not in cache:
             log.warn('Required package {pkg} not available'.format(pkg=requirement))
+            p.done(p.FAIL)
             continue
 
         # Mark the package for installation
-        click.echo('Marking package {pkg} for installation'.format(pkg=requirement))
         cache[requirement].mark_install()
 
     log.info('Committing package cache')
