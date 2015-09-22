@@ -34,8 +34,8 @@ from ips_vagrant.scrapers import Licenses, Version, Installer
               help='Use cached version downloads if possible. (Default: True)')
 @click.option('--install/--no-install', envvar='INSTALL', default=True,
               help='Run the IPS installation automatically after setup. (Default: True)')
-@click.option('--dev/--no-dev', envvar='IPSV_IN_DEV', default=True,
-              help='Install developer tools and put the site into dev mode after installation. (Default: True)')
+@click.option('--dev/--no-dev', envvar='IPSV_IN_DEV', default=False,
+              help='Install developer tools and put the site into dev mode after installation. (Default: False)')
 @pass_context
 def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, install, dev):
     """

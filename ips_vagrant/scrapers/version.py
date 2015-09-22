@@ -20,6 +20,9 @@ class Version(object):
         """
         self.ctx = ctx
         self.cookiejar = cookiejar
+        self.session = requests.Session()
+        self.session.cookies.update(cookiejar)
+        self.session.headers.update({'User-Agent': 'ipsv/0.1.0'})
         self.license = license
         self.form = None
         self.log = logging.getLogger('ipsv.scraper.version')

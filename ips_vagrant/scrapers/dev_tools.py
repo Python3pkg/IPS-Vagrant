@@ -27,6 +27,7 @@ class DevTools(object):
 
         self.session = requests.Session()
         self.session.cookies.update(self.cookiejar)
+        self.session.headers.update({'User-Agent': 'ipsv/0.1.0'})
 
     def get(self):
         """
