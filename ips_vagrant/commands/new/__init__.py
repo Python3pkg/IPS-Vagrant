@@ -229,7 +229,14 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     p.done()
 
     # Run the installation
-    p = Echo('Initializing installer...')
-    installer = Installer(ctx, site)
-    p.done()
-    installer.start()
+    if install:
+        p = Echo('Initializing installer...')
+        installer = Installer(ctx, site)
+        p.done()
+        installer.start()
+        return
+
+    click.echo('------')
+    click.secho('IPS is now ready to be installed. To proceed with the installation, follow the link below',
+                fg='yellow', bold=True)
+    click.echo('{schema}://{host}'.format(schema='https' if site.ssl else 'http', host=site.domain.name))
