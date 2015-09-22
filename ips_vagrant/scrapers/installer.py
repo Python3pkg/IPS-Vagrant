@@ -68,7 +68,7 @@ class Installer(object):
         self.browser.open(self.url)
         self._check_title(self.browser.title())
         p = Echo('Running system check...')
-        rsoup = BeautifulSoup(self.browser.response().read())
+        rsoup = BeautifulSoup(self.browser.response().read(), "html.parser")
 
         # Check for any errors
         errors = []
@@ -113,7 +113,7 @@ class Installer(object):
         try:
             self._check_title(self.browser.title())
         except InstallationError:
-            rsoup = BeautifulSoup(self.browser.response().read())
+            rsoup = BeautifulSoup(self.browser.response().read(), "html.parser")
             error = rsoup.find('li', id='license_lkey').find('span', {'class': 'ipsType_warning'}).text
             raise InstallationError(error)
 
@@ -212,7 +212,7 @@ class Installer(object):
         self.browser.follow_link(continue_link)
 
         # Get the MultipleRedirect URL
-        rsoup = BeautifulSoup(self.browser.response().read())
+        rsoup = BeautifulSoup(self.browser.response().read(), "html.parser")
         cj = self.browser._ua_handlers['_cookies'].cookiejar  # TODO
         mr_link = rsoup.find('div', {'class': 'ipsMultipleRedirect'})['data-url']
         mr_link += '&' + urlencode({'mr': 'MA=='})
@@ -302,7 +302,7 @@ class Installer(object):
             p.done()
 
         # Get the link to our community homepage
-        rsoup = BeautifulSoup(r.text)
+        rsoup = BeautifulSoup(r.text, "html.parser")
         click.echo('------')
         click.secho(rsoup.find('h1', id='elInstaller_welcome').text.strip(), fg='yellow', bold=True)
         click.secho(rsoup.find('p', {'class': 'ipsType_light'}).text.strip(), fg='yellow', dim=True)
