@@ -2,6 +2,7 @@ import os
 import apt
 import click
 import logging
+import subprocess
 from alembic import command
 from alembic.config import Config
 from ips_vagrant.common.progress import Echo
@@ -87,6 +88,12 @@ def cli(ctx):
     fpm_config = FpmPoolConfig().template
     with open('/etc/php5/fpm/pool.d/ips.conf', 'w') as f:
         f.write(fpm_config)
+    p.done()
+
+    # Restart php5-fpm
+    p = Echo('Restarting php5-fpm...')
+    FNULL = open(os.devnull, 'w')
+    subprocess.check_call(['service', 'php5-fpm', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
     p.done()
 
     log.debug('Writing setup lock file')
