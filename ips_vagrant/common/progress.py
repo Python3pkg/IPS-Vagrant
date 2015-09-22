@@ -1,16 +1,17 @@
 import sys
 import termios
+import click
 import progressbar
 from array import array
 from fcntl import ioctl
+
+_DEFAULT_MAXTERMSIZE = 100
 
 
 class ProgressBar(progressbar.ProgressBar):
     """
     ProgressBar decorator implementing custom widgets and max term width support
     """
-    _DEFAULT_MAXTERMSIZE = 100
-
     def __init__(self, maxval=None, label=None, max_term_width=None, fd=sys.stderr):
         """
         Initialize a new ProgressBar instance
@@ -24,7 +25,7 @@ class ProgressBar(progressbar.ProgressBar):
         """
         self.max_term_width = max_term_width
         self.label = label
-        self.max_term_width = max_term_width or self._DEFAULT_MAXTERMSIZE
+        self.max_term_width = max_term_width or _DEFAULT_MAXTERMSIZE
         widgets = [Label(self.label), progressbar.Bar('#', '[', ']'), ' [', progressbar.Percentage(), '] ']
         super(ProgressBar, self).__init__(maxval, widgets, fd=fd)
 
@@ -96,3 +97,34 @@ class Label(progressbar.Widget):
             padding = ''
 
         self._formatted = ' {v}{p} '.format(v=value, p=padding)
+
+
+class Echo:
+    """
+    Echo wrapper, prints a message for a pending task, then automatically reformats it when the task is complete
+    """
+    OK   = ' OK '
+    WARN = 'WARN'
+    FAIL = click.style('FAIL', 'red', bold=True)
+
+    def __init__(self, message, color='yellow', bold=True, max_term_width=None):
+        """
+        @type   message:        str
+        @type   color:          str
+        @type   bold:           bool
+        @type   max_term_width: int or None
+        """
+        self.max_term_width = max_term_width or _DEFAULT_MAXTERMSIZE
+        self.message = message[:self.max_term_width - 7]
+        self.color = color
+        self.bold = bold
+
+        click.secho(' {msg} '.format(msg=message), nl=False, color=color, bold=bold)
+
+    def done(self, status=OK):
+        """
+        @type   status: str
+        """
+        padding = ' ' * (94 - len(self.message))
+        message = '{msg}{pad}[{status}]'.format(msg=self.message, pad=padding, status=status)
+        click.secho(message, color=self.color, bold=self.bold)

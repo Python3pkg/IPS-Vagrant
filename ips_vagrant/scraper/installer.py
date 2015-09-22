@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from mechanize import Browser
 from sqlalchemy import create_engine
 from ips_vagrant.common import cookiejar
-from ips_vagrant.common.progress_bar import ProgressBar
+from ips_vagrant.common.progress import ProgressBar
 
 
 class Installer(object):
