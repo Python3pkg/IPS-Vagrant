@@ -24,7 +24,7 @@ setup(
     ],
     packages=find_packages(),
     package_data={'ips_vagrant': ['config/*.conf', 'generators/templates/nginx/*.tpl',
-                                  'generators/templates/php5-fpm/*.tpl' 'alembic.ini']},
+                                  'generators/templates/php5-fpm/*.tpl', 'alembic.ini']},
     entry_points={
         'console_scripts': [
             'ipsv = ips_vagrant.cli:cli'
