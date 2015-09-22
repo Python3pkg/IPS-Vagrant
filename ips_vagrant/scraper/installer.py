@@ -161,17 +161,21 @@ class Installer(object):
         self.browser.select_form(nr=0)
 
         # Get the admin credentials
+        prompted = []
         user = self.ctx.config.get('User', 'AdminUser')
         if not user:
             user = click.prompt('Admin display name')
+            prompted.append('user')
 
         password = self.ctx.config.get('User', 'AdminPass')
         if not password:
             password = click.prompt('Admin password', hide_input=True, confirmation_prompt='Confirm admin password')
+            prompted.append('password')
 
         email = self.ctx.config.get('User', 'AdminEmail')
         if not email:
             email = click.prompt('Admin email')
+            prompted.append('email')
 
         self.browser.form['admin_user'] = user
         self.browser.form['admin_pass1'] = password
@@ -181,14 +185,15 @@ class Installer(object):
         self.browser.submit()
         p.done()
 
-        save = click.confirm('Would you like to save and use these admin credentials for future installations?')
-        if save:
-            self.log.info('Saving admin login credentials')
-            self.ctx.config.set('User', 'AdminUser', user)
-            self.ctx.config.set('User', 'AdminPass', password)
-            self.ctx.config.set('User', 'AdminEmail', email)
-            with open(self.ctx.config_path, 'wb') as cf:
-                self.ctx.config.write(cf)
+        if len(prompted) >= 3:
+            save = click.confirm('Would you like to save and use these admin credentials for future installations?')
+            if save:
+                self.log.info('Saving admin login credentials')
+                self.ctx.config.set('User', 'AdminUser', user)
+                self.ctx.config.set('User', 'AdminPass', password)
+                self.ctx.config.set('User', 'AdminEmail', email)
+                with open(self.ctx.config_path, 'wb') as cf:
+                    self.ctx.config.write(cf)
 
         self.install()
 
