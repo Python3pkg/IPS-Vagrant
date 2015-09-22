@@ -108,4 +108,4 @@ class Site(Base):
         """
         self._name = value
         self.slug = re.sub('[^0-9a-zA-Z_-]+', '_', str(value).lower())
-        self.root = os.path.abspath(os.path.join(_cfg.get('Paths', 'HttpRoot'), value, self.slug))
+        self.root = os.path.abspath(os.path.join(_cfg.get('Paths', 'HttpRoot'), self.domain.name, self.slug))
