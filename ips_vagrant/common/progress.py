@@ -115,11 +115,12 @@ class Echo:
         @type   max_term_width: int or None
         """
         self.max_term_width = max_term_width or _DEFAULT_MAXTERMSIZE
-        self.message = message[:self.max_term_width - 7]
+        self.message = ' {msg} '.format(msg=message.strip())
+        self.message = self.message[:self.max_term_width - 7]
         self.color = color
         self.bold = bold
 
-        click.secho(r' {msg} \r'.format(msg=message), nl=False, color=color, bold=bold)
+        click.secho(self.message, nl=False, fg=color, bold=bold)
 
     def done(self, status=OK):
         """
@@ -127,4 +128,7 @@ class Echo:
         """
         padding = ' ' * (94 - len(self.message))
         message = '{msg}{pad}[{status}]'.format(msg=self.message, pad=padding, status=status)
-        click.secho(message, color=self.color, bold=self.bold)
+        stdout = click.get_text_stream('stdout')
+        stdout.write('\r\033[K')
+        stdout.flush()
+        click.secho(message, fg=self.color, bold=self.bold)

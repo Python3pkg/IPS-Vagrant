@@ -71,6 +71,7 @@ def cli(ctx):
 
         # Mark the package for installation
         cache[requirement].mark_install()
+        p.done()
 
     log.info('Committing package cache')
     cache.commit()
