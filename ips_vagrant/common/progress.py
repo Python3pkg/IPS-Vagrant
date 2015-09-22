@@ -1,3 +1,4 @@
+import os
 import sys
 import termios
 import click
@@ -26,8 +27,15 @@ class ProgressBar(progressbar.ProgressBar):
         self.max_term_width = max_term_width
         self.label = label
         self.max_term_width = max_term_width or _DEFAULT_MAXTERMSIZE
-        widgets = [Label(self.label), progressbar.Bar('#', '[', ']'), ' [', progressbar.Percentage(), '] ']
+        widgets = [Label(self.label), progressbar.Bar('#', '[', ']'), ' [', Percentage(), ']']
         super(ProgressBar, self).__init__(maxval, widgets, fd=fd)
+
+    def _format_line(self):
+        """
+        Joins the widgets and justifies the line
+        """
+        line = super(ProgressBar, self)._format_line()
+        return '\033[1m\033[33m' + line + '\033[0m'
 
     def _handle_resize(self, signum=None, frame=None):
         """
@@ -35,6 +43,13 @@ class ProgressBar(progressbar.ProgressBar):
         """
         h, w = array('h', ioctl(self.fd, termios.TIOCGWINSZ, '\0' * 8))[:2]
         self.term_width = min([w, self.max_term_width])
+
+    def start(self):
+        """
+        Hide cursor at start
+        """
+        os.system('setterm -cursor off')
+        super(ProgressBar, self).start()
 
     def update(self, value=None, label=None):
         """
@@ -46,6 +61,13 @@ class ProgressBar(progressbar.ProgressBar):
             self.label = label
 
         super(ProgressBar, self).update(value)
+
+    def finish(self):
+        """
+        Re-enable cursor on finish
+        """
+        os.system('setterm -cursor on')
+        super(ProgressBar, self).finish()
 
 
 class Label(progressbar.Widget):
@@ -97,6 +119,19 @@ class Label(progressbar.Widget):
             padding = ''
 
         self._formatted = ' {v}{p} '.format(v=value, p=padding)
+
+
+class Percentage(progressbar.Widget):
+    """
+    Displays the current percentage as a number with a percent sign.
+    @type   pbar:   ProgressBar
+    @rtype: str
+    """
+    def update(self, pbar):
+        if pbar.finished:
+            return Echo.OK
+
+        return '%3d%%' % pbar.percentage()
 
 
 class Echo:
