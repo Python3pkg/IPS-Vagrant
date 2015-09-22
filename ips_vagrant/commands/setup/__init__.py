@@ -85,7 +85,7 @@ def cli(ctx):
         os.remove('/etc/php5/fpm/pool.d/www.conf')
 
     fpm_config = FpmPoolConfig().template
-    with open('/etc/php5/fpm/pool.d/ips.conf') as f:
+    with open('/etc/php5/fpm/pool.d/ips.conf', 'w') as f:
         f.write(fpm_config)
     p.done()
 
