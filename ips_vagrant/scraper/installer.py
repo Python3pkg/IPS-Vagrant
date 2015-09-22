@@ -23,6 +23,7 @@ class Installer(object):
         @type   site:   ips_vagrant.models.sites.Site
         """
         self.log = logging.getLogger('ipsv.installer')
+        self.ctx = ctx
         self._previous_title = None
         self.url = '{scheme}://{host}/admin/install'.format(
             scheme='https' if site.ssl else 'http', host=site.domain.name
@@ -159,14 +160,36 @@ class Installer(object):
         self._check_title(self.browser.title())
         self.browser.select_form(nr=0)
 
-        self.browser.form['admin_user'] = click.prompt('Admin display name')
-        password = click.prompt('Admin password', hide_input=True, confirmation_prompt='Confirm admin password')
+        # Get the admin credentials
+        user = self.ctx.config.get('User', 'AdminUser')
+        if not user:
+            user = click.prompt('Admin display name')
+
+        password = self.ctx.config.get('User', 'AdminPass')
+        if not password:
+            password = click.prompt('Admin password', hide_input=True, confirmation_prompt='Confirm admin password')
+
+        email = self.ctx.config.get('User', 'AdminEmail')
+        if not email:
+            email = click.prompt('Admin email')
+
+        self.browser.form['admin_user'] = user
         self.browser.form['admin_pass1'] = password
         self.browser.form['admin_pass2'] = password
-        self.browser.form['admin_email'] = click.prompt('Admin email')
+        self.browser.form['admin_email'] = email
         p = Echo('Submitting admin information...')
         self.browser.submit()
         p.done()
+
+        save = click.confirm('Would you like to save and use these admin credentials for future installations?')
+        if save:
+            self.log.info('Saving admin login credentials')
+            self.ctx.config.set('User', 'AdminUser', user)
+            self.ctx.config.set('User', 'AdminPass', password)
+            self.ctx.config.set('User', 'AdminEmail', email)
+            with open(self.ctx.config_path, 'wb') as cf:
+                self.ctx.config.write(cf)
+
         self.install()
 
     def install(self):
