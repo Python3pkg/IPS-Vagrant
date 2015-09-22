@@ -14,7 +14,7 @@ from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.common import domain_parse, choice
 from ips_vagrant.generators.nginx import ServerBlock
 from ips_vagrant.common.ssl import CertificateFactory
-from ips_vagrant.scraper import Licenses, Version, Installer
+from ips_vagrant.scrapers import Licenses, Version, Installer
 
 
 @click.command('new', short_help='Creates a new IPS installation.')

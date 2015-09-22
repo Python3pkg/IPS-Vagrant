@@ -5,7 +5,7 @@ import pkgutil
 import importlib
 import sqlahelper
 from ConfigParser import ConfigParser
-from ips_vagrant.scraper import Login
+from ips_vagrant.scrapers import Login
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix='IPSV', max_content_width=100)
 
