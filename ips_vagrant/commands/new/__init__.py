@@ -25,7 +25,7 @@ from ips_vagrant.scraper import Licenses, Version, Installer
 @click.option('--enable/--disable', prompt='Do you want to enable this site after installation?', default=True,
               help='Enable site after installation. Note that this will automatically disable any existing sites '
                    'running on this domain. (Default: True)')
-@click.option('--ssl/--no-ssl', envvar='SSL', help='Enable SSL on this installation. (Default: Auto)')
+@click.option('--ssl/--no-ssl', envvar='SSL', help='Enable SSL on this installation. (Default: Auto)', default=None)
 @click.option('--spdy/--no-spdy', envvar='SPDY', default=False,
               help='Enable Google SPDY on this installation. Only applies when SSL is enabled. (Default: False)')
 @click.option('--gzip/--no-gzip', envvar='GZIP', default=True, help='Enable GZIP compression. (Default: True)')
@@ -95,15 +95,13 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
                         .format(s=name, d=dname))
 
     # Create the site database entry
-    site = Site(name=name, domain=domain, root=root, license_key=lmeta.license_key, ssl=ssl, spdy=spdy, gzip=gzip,
-                enabled=enable)
+    site = Site(name=name, domain=domain, license_key=lmeta.license_key, ssl=ssl, spdy=spdy, gzip=gzip, enabled=enable)
     ctx.db.add(site)
 
     # Construct the HTTP path
-    root = os.path.abspath(os.path.join(ctx.config.get('Paths', 'HttpRoot'), domain.name, site.slug))
-    if not os.path.exists(root):
-        log.debug('Creating HTTP root directory: %s', root)
-        os.makedirs(root, 0o755)
+    if not os.path.exists(site.root):
+        log.debug('Creating HTTP root directory: %s', site.root)
+        os.makedirs(site.root, 0o755)
 
     # If our new site was enabled, we need to disable any other sites utilizing this domain
     if site.enabled:
@@ -130,7 +128,7 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     # Generate SSL certificates if enabled
     if ssl:
         ssl_path = os.path.join(ctx.config.get('Paths', 'NginxSSL'), domain.name)
-        if not os.path.exists(server_config_path):
+        if not os.path.exists(ssl_path):
             log.debug('Creating new SSL path: %s', ssl_path)
             os.makedirs(ssl_path, 0o755)
 

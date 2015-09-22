@@ -5,14 +5,21 @@ import logging
 import sqlahelper
 import ips_vagrant
 from ConfigParser import ConfigParser
+from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, Text, ForeignKey, text
 from sqlalchemy.orm import relationship
-from sqlalchemy import create_engine
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
 
 Base = sqlahelper.get_base()
 Session = sqlahelper.get_session()
 metadata = Base.metadata
+
+_cfg = ConfigParser()
+_cfg.read(os.path.join(os.path.dirname(os.path.realpath(ips_vagrant.__file__)), 'config/ipsv.conf'))
+engine = create_engine("sqlite:////{path}"
+                       .format(path=os.path.join(_cfg.get('Paths', 'Data'), 'sites.db')))
+Base.metadata.bind = engine
 
 
 class Domain(Base):
@@ -50,6 +57,7 @@ class Domain(Base):
 
         return domain
 
+    @hybrid_method
     def get_extras(self):
         """
         Get the extra associated domain names (e.g. www.dname.com)
@@ -85,7 +93,7 @@ class Site(Base):
     enabled = Column(Integer, server_default=text("0"))
     domain = relationship("Domain")
 
-    @property
+    @hybrid_property
     def name(self):
         """
         Get the sites name
@@ -98,11 +106,6 @@ class Site(Base):
         """
         Generate the Site's slug (for file paths, URL's, etc.)
         """
+        self._name = value
         self.slug = re.sub('[^0-9a-zA-Z_-]+', '_', str(value).lower())
-
-
-_cfg = ConfigParser()
-_cfg.read(os.path.join(os.path.dirname(os.path.realpath(ips_vagrant.__file__)), 'config/ipsv.conf'))
-engine = create_engine("sqlite:////{path}"
-                       .format(path=os.path.join(_cfg.get('Paths', 'Data'), 'sites.db')))
-Base.metadata.bind = engine
+        self.root = os.path.abspath(os.path.join(_cfg.get('Paths', 'HttpRoot'), value, self.slug))
