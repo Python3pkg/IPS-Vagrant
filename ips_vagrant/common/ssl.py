@@ -1,3 +1,4 @@
+import logging
 from OpenSSL import crypto
 
 
@@ -11,6 +12,8 @@ class CertificateFactory:
         @type   site:   ips_vagrant.models.sites.Site
         """
         self.site = site
+        self.log = logging.getLogger('ipsv.common.ssl')
+        self.log.debug('New Certificate Factory created for site %s', site.name)
 
     def get(self, bits=2048, type=crypto.TYPE_RSA, digest='sha1'):
         """
@@ -19,6 +22,7 @@ class CertificateFactory:
         @type   digest: str
         @rtype: Certificate
         """
+        self.log.debug('Creating a new self-signed SSL certificate')
         # Generate the key and ready our cert
         key = crypto.PKey()
         key.generate_key(type, bits)
