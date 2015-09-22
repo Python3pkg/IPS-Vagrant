@@ -19,6 +19,7 @@ class Context(object):
         self.config = ConfigParser()
         self.config_path = None
         self.log = None
+        self.cache = True
         self.database = NotImplemented
         self.basedir = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 

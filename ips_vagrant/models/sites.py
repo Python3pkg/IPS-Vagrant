@@ -91,6 +91,7 @@ class Site(Base):
     db_user = Column(Text, nullable=True)
     db_pass = Column(Text, nullable=True)
     enabled = Column(Integer, server_default=text("0"))
+    in_dev = Column(Integer, nullable=True, server_default=text("0"))
     domain = relationship("Domain")
 
     @hybrid_property

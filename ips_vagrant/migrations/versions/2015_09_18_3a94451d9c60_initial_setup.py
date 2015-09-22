@@ -37,6 +37,7 @@ def upgrade():
     sa.Column('spdy', sa.Integer(), server_default=sa.text(u'0'), nullable=True),
     sa.Column('gzip', sa.Integer(), server_default=sa.text(u'1'), nullable=True),
     sa.Column('enabled', sa.Integer(), server_default=sa.text(u'0'), nullable=True),
+    sa.Column('in_dev', sa.Integer(), server_default=sa.text(u'0'), nullable=True,),
     sa.Column('db_host', sa.Text(), nullable=True),
     sa.Column('db_name', sa.Text(), nullable=True),
     sa.Column('db_user', sa.Text(), nullable=True),

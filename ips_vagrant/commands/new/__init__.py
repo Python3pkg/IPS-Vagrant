@@ -34,14 +34,17 @@ from ips_vagrant.scrapers import Licenses, Version, Installer
               help='Use cached version downloads if possible. (Default: True)')
 @click.option('--install/--no-install', envvar='INSTALL', default=True,
               help='Run the IPS installation automatically after setup. (Default: True)')
+@click.option('--dev/--no-dev', envvar='IPSV_IN_DEV', default=True,
+              help='Install developer tools and put the site into dev mode after installation. (Default: True)')
 @pass_context
-def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, install):
+def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, install, dev):
     """
     Downloads and installs a new instance of the latest Invision Power Suite release.
     """
     assert isinstance(ctx, Context)
     login_session = ctx.get_login()
     log = logging.getLogger('ipsv.new')
+    ctx.cache = cache
 
     # Prompt for our desired license
     def get_license():
@@ -101,7 +104,8 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
                         .format(s=name, d=dname))
 
     # Create the site database entry
-    site = Site(name=name, domain=domain, license_key=lmeta.license_key, ssl=ssl, spdy=spdy, gzip=gzip, enabled=enable)
+    site = Site(name=name, domain=domain, license_key=lmeta.license_key, ssl=ssl, spdy=spdy, gzip=gzip,
+                enabled=enable, in_dev=dev)
     ctx.db.add(site)
     p.done()
 
@@ -234,9 +238,9 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
         installer = Installer(ctx, site)
         p.done()
         installer.start()
+    else:
+        click.echo('------')
+        click.secho('IPS is now ready to be installed. To proceed with the installation, follow the link below',
+                    fg='yellow', bold=True)
+        click.echo('{schema}://{host}'.format(schema='https' if site.ssl else 'http', host=site.domain.name))
         return
-
-    click.echo('------')
-    click.secho('IPS is now ready to be installed. To proceed with the installation, follow the link below',
-                fg='yellow', bold=True)
-    click.echo('{schema}://{host}'.format(schema='https' if site.ssl else 'http', host=site.domain.name))

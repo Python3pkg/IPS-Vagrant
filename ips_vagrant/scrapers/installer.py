@@ -1,16 +1,22 @@
+import os
+import shutil
 import click
 import string
 import random
 import logging
 import json
+import re
 import requests
 from hashlib import md5
 from urllib import urlencode
 from bs4 import BeautifulSoup
 from mechanize import Browser
 from sqlalchemy import create_engine
+import tempfile
+import zipfile
 from ips_vagrant.common import cookiejar
 from ips_vagrant.common.progress import ProgressBar, Echo
+from . import DevTools
 
 
 class Installer(object):
@@ -251,6 +257,49 @@ class Installer(object):
         p = Echo('Finalizing...')
         r = s.get(j['redirect'])
         p.done()
+
+        # Install developer tools
+        if self.site.in_dev:
+            p = Echo('Fetching Developer Tools version information...')
+            dev_tools = DevTools(self.ctx, self.site).get()
+            p.done()
+            p = Echo('Downloading the most recent Developer Tools release...')
+            filename = dev_tools.filename if dev_tools.filename and self.ctx.cache else dev_tools.download()
+            p.done()
+
+            # Extract dev files
+            p = Echo('Extracting Developer Tools...')
+            tmpdir = tempfile.mkdtemp('ips')
+            dev_tools_zip = os.path.join(tmpdir, 'dev_tools.zip')
+            dev_tools_dir = os.path.join(tmpdir, 'dev_tools')
+            os.mkdir(dev_tools_dir)
+
+            shutil.copyfile(filename, dev_tools_zip)
+            with zipfile.ZipFile(dev_tools_zip) as z:
+                namelist = z.namelist()
+                if re.match(r'^\d+\/?$', namelist[0]):
+                    self.log.debug('Developer Tools directory matched: %s', namelist[0])
+                else:
+                    self.log.error('No developer tools directory matched, unable to continue')
+                    raise Exception('Unrecognized dev tools file format, aborting')
+
+                z.extractall(dev_tools_dir)
+                self.log.debug('Developer Tools extracted to: %s', dev_tools_dir)
+                dev_tmpdir = os.path.join(dev_tools_dir, namelist[0])
+                for filename in os.listdir(dev_tmpdir):
+                    shutil.copy(os.path.join(dev_tmpdir, filename), os.path.join(self.site.root, filename))
+
+                self.log.info('Developer Tools copied to: %s', self.site.root)
+            shutil.rmtree(tmpdir)
+            p.done()
+
+            p = Echo('Putting IPS into IN_DEV mode...')
+            const_path = os.path.join(self.site.root, 'constants.php')
+            with open(const_path, 'w+') as f:
+                f.write('<?php')
+                f.write('')
+                f.write("define( 'IN_DEV', TRUE );")
+            p.done()
 
         # Get the link to our community homepage
         rsoup = BeautifulSoup(r.text)
