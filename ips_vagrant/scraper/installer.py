@@ -181,6 +181,7 @@ class Installer(object):
         s = requests.Session()
         s.headers.update({'X-Requested-With': 'XMLHttpRequest'})
         s.cookies.update(cj)
+        s.verify = False
         r = s.get(mr_link)
         j = json.loads(r.text)
 
