@@ -76,7 +76,8 @@ class IpsManager(object):
 
         # If we have a cache for this version, just add our url to it
         if version.version in self.versions:
-            self.versions[version.version].url = url
+            self.log.debug('Latest IPS version already downloaded, applying URL to cache entry')
+            self.versions[version.version].request = ('post', url, {'version': 'latest'})
             return
 
         self.versions[version.version] = IpsMeta(self, version, request=('post', url, {'version': 'latest'}))
@@ -112,13 +113,14 @@ class IpsManager(object):
         @type   use_cache:  bool
         @rtype: str
         """
+        self.log.info('Retrieving version %s', version.version)
+
         if version.filepath:
             if use_cache:
                 return version.filepath
             else:
                 self.log.info('Ignoring cached version: %s', version.version)
-
-        if not use_cache:
+        elif not use_cache:
             self.log.info("We can't ignore the cache of a version that hasn't been downloaded yet")
 
         version.download()
@@ -143,7 +145,7 @@ class IpsMeta(object):
         self.ips_manager = ips_manager
         self.filepath = filepath
         self.version = version
-        self.url = request
+        self.request = request
         self.log = logging.getLogger('ipsv.scraper.version')
 
         self.session = self.ips_manager.session
@@ -156,7 +158,8 @@ class IpsMeta(object):
         @rtype:     str
         """
         # Submit a download request and test the response
-        response = self.session.request(*self.url, stream=True)
+        self.log.debug('Submitting request: %s', self.request)
+        response = self.session.request(*self.request, stream=True)
         if response.status_code != 200:
             self.log.error('Download request failed: %d', response.status_code)
             raise HtmlParserError
