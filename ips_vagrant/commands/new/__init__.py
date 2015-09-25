@@ -14,7 +14,8 @@ from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.common import domain_parse, choice
 from ips_vagrant.generators.nginx import ServerBlock
 from ips_vagrant.common.ssl import CertificateFactory
-from ips_vagrant.scrapers import Licenses, Version, Installer
+from ips_vagrant.scrapers import Licenses, Installer
+from ips_vagrant.downloaders import IpsManager
 
 
 @click.command('new', short_help='Creates a new IPS installation.')
@@ -80,10 +81,10 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     # Get the latest IPS release
     lmeta = get_license()
     p = Echo('Fetching IPS version information...')
-    version = Version(ctx, login_session, lmeta).get()
+    ips = IpsManager(ctx, lmeta)
     p.done()
     p = Echo('Downloading the most recent IPS release...')
-    filename = version.filename if version.filename and cache else version.download()
+    filename = ips.get(ips.latest, cache)
     p.done()
 
     # Parse the specific domain and make sure it's valid
