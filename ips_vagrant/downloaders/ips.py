@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from distutils.version import LooseVersion
 from glob import glob
 import json
 import os
@@ -8,7 +7,7 @@ from zipfile import ZipFile, BadZipfile
 import re
 from bs4 import BeautifulSoup
 from mechanize import Browser
-from ips_vagrant.common import http_session
+from ips_vagrant.common import http_session, parse_version
 from ips_vagrant.scrapers.errors import HtmlParserError
 
 
@@ -23,6 +22,7 @@ class IpsManager(object):
         @type   license:    ips_vagrant.scraper.licenses.LicenseMeta
         """
         self.ctx = ctx
+        self.log = logging.getLogger('ipsv.scraper.version')
         self.session = http_session(ctx.cookiejar)
         self._license = license
 
@@ -32,7 +32,6 @@ class IpsManager(object):
         self._populate_local()
         self._populate_latest()
         self._sort()
-        self.log = logging.getLogger('ipsv.scraper.version')
 
     def _sort(self):
         """
@@ -48,7 +47,7 @@ class IpsManager(object):
         for archive in archives:
             try:
                 version = self._read_zip(archive)
-                self.versions[version] = IpsMeta(self, version, filepath=archive)
+                self.versions[version.version] = IpsMeta(self, version, filepath=archive)
             except BadZipfile as e:
                 self.log.warn('Unreadable zip archive in IPS versions directory (%s): %s', e.message, archive)
 
@@ -67,22 +66,22 @@ class IpsManager(object):
         form = BeautifulSoup(script_tpl.text, "html.parser").find('form')
 
         # Parse the response for a download link to the latest IPS release
-        version = LooseVersion(form.find('label', {'for': 'version_latest'}).text).version
+        version = parse_version(form.find('label', {'for': 'version_latest'}).text)
         self.log.info('Latest IPS version: %s', version)
         url = form.get('action')
 
         # If we have a cache for this version, just add our url to it
-        if version in self.versions:
-            self.versions[version].url = url
+        if version.version in self.versions:
+            self.versions[version.version].url = url
             return
 
-        self.versions[version] = IpsMeta(self, version, request=('post', url, {'version': 'latest'}))
+        self.versions[version.version] = IpsMeta(self, version, request=('post', url, {'version': 'latest'}))
 
     def _read_zip(self, filepath):
         """
         Read an IPS installation zipfile and return the core version number
         @type   filepath:   str
-        @rtype: tuple
+        @rtype: LooseVersion
         """
         with ZipFile(filepath) as zip:
             namelist = zip.namelist()
@@ -99,7 +98,7 @@ class IpsManager(object):
             version = versions[-1]
 
             self.log.debug('Version matched: ', version)
-            return LooseVersion(version).version
+            return parse_version(version)
 
     def get(self, version, use_cache=True):
         """
@@ -123,7 +122,7 @@ class IpsManager(object):
 
     @property
     def latest(self):
-        return next(reversed(self.versions))
+        return self.versions[next(reversed(self.versions))]
 
 
 class IpsMeta(object):
@@ -133,7 +132,7 @@ class IpsMeta(object):
     def __init__(self, ips_manager, version, filepath=None, request=None):
         """
         @type   ips_manager:    IpsManager
-        @type   version:        tuple
+        @type   version:        LooseVersion
         @type   filepath:       str or None
         @type   request:        tuple or None (method, url, params)
         """

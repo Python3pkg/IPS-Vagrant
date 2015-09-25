@@ -1,3 +1,4 @@
+from distutils.version import StrictVersion, LooseVersion
 import os
 import click
 import logging
@@ -89,3 +90,20 @@ def cookiejar(name='session'):
             log.warn('Session / cookie file exists, but could not be loaded', exc_info=e)
 
     return cj
+
+
+def parse_version(vstring):
+    """
+    StrictVersion / LooseVersion decorator method
+    @type   vstring:    str
+    @return:    StrictVersion if possible, otherwise LooseVersion
+    @rtype:     StrictVersion or LooseVersion
+    """
+    try:
+        version = StrictVersion(vstring)
+    except ValueError:
+        logging.getLogger('ipvs.common.debug').info('Strict parsing failed, falling back to LooseVersion instead')
+        version = LooseVersion(vstring)
+        version.version = tuple(version.version)
+
+    return version
