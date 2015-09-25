@@ -2,6 +2,7 @@ import os
 import click
 import logging
 import cookielib
+import requests
 import ips_vagrant
 from urlparse import urlparse
 from ConfigParser import ConfigParser
@@ -56,19 +57,34 @@ def domain_parse(url):
     return url
 
 
-def cookiejar():
+def http_session(cookies=None):
+    """
+    Generate a Requests session
+    @param  cookies:    Cookies to load. None loads the app default CookieJar. False disables cookie loading.
+    @type   cookies:    dict, cookielib.LWPCookieJar, None or False
+    @rtype  requests.Session
+    """
+    session = requests.Session()
+    if cookies is not False:
+        session.cookies.update(cookies or cookiejar())
+    session.headers.update({'User-Agent': 'ipsv/{v}'.format(v=ips_vagrant.__version__)})
+
+    return session
+
+
+def cookiejar(name='session'):
     """
     Ready the CookieJar, loading a saved session if available
     @rtype: cookielib.LWPCookieJar
     """
     log = logging.getLogger('ipsv.common.cookiejar')
-    spath = os.path.join(config().get('Paths', 'Data'), 'session.txt')
+    spath = os.path.join(config().get('Paths', 'Data'), '{n}.txt'.format(n=name))
     cj = cookielib.LWPCookieJar(spath)
     log.debug('Attempting to load session file: %s', spath)
     if os.path.exists(spath):
         try:
             cj.load()
-            log.info('Successfully loaded a saved login session')
+            log.info('Successfully loaded a saved session / cookie file')
         except cookielib.LoadError as e:
             log.warn('Session / cookie file exists, but could not be loaded', exc_info=e)
 
