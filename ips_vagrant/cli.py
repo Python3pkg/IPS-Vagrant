@@ -5,6 +5,7 @@ import pkgutil
 import importlib
 import sqlahelper
 from ConfigParser import ConfigParser
+from ips_vagrant import __version__
 from ips_vagrant.scrapers import Login
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix='IPSV', max_content_width=100)
@@ -113,6 +114,7 @@ pass_context = click.make_pass_decorator(Context, ensure=True)
                    '3 for debug')
 @click.option('-c', '--config', type=click.Path(dir_okay=False, resolve_path=True),
               envvar='IPSV_CONFIG_PATH', default='/etc/ipsv/ipsv.conf', help='Path to the IPSV configuration file')
+@click.version_option(__version__)
 @pass_context
 def cli(ctx, verbose, config):
     """

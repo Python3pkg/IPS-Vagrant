@@ -16,15 +16,15 @@ class IpsManager(object):
     IPS Versions Manager
     """
     # noinspection PyShadowingBuiltins
-    def __init__(self, ctx, license):
+    def __init__(self, ctx, license=None):
         """
         @type   ctx:        ips_vagrant.cli.Context
-        @type   license:    ips_vagrant.scraper.licenses.LicenseMeta
+        @type   license:    ips_vagrant.scraper.licenses.LicenseMeta or None
         """
         self.ctx = ctx
         self.log = logging.getLogger('ipsv.scraper.version')
         self.session = http_session(ctx.cookiejar)
-        self._license = license
+        self.license = license
 
         self.path = os.path.join(self.ctx.config.get('Paths', 'Data'), 'versions', 'ips')
         self.versions = OrderedDict()
@@ -55,8 +55,12 @@ class IpsManager(object):
         """
         Popular version data for the latest release available for download
         """
+        if self.license is None:
+            self.log.debug('No license specified, not retrieving latest version information')
+            return
+
         # Submit a request to the client area
-        response = self.session.get(self._license.license_url)
+        response = self.session.get(self.license.license_url)
         self.log.debug('Response code: %s', response.status_code)
         response.raise_for_status()
 
@@ -94,10 +98,10 @@ class IpsManager(object):
             versions_path = os.path.join(namelist[0], 'applications/core/data/versions.json')
             if versions_path not in namelist:
                 raise BadZipfile('Missing versions.json file')
-            versions = json.loads(zip.read(versions_path))
-            version = versions[-1]
+            versions = json.loads(zip.read(versions_path), object_pairs_hook=OrderedDict)
+            version = versions[next(reversed(versions))]
 
-            self.log.debug('Version matched: ', version)
+            self.log.debug('Version matched: %s', version)
             return parse_version(version)
 
     def get(self, version, use_cache=True):
