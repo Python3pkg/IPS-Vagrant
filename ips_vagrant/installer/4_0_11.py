@@ -1,6 +1,6 @@
 from urllib import urlencode
 from urlparse import urlparse, parse_qs, urlunparse
-from .latest import Installer as Latest
+from ips_vagrant.installer.latest import Installer as Latest
 
 
 version = (4, 0, 11)

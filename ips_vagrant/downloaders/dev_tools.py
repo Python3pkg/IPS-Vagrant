@@ -2,7 +2,7 @@ import os
 import logging
 import requests
 from bs4 import BeautifulSoup
-from .errors import HtmlParserError
+from ips_vagrant.scrapers.errors import HtmlParserError
 from ips_vagrant.common import cookiejar
 
 
