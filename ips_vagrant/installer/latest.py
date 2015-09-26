@@ -1,25 +1,39 @@
-import os
-import shutil
 import click
 import string
 import random
 import logging
 import json
-import re
 import requests
 from hashlib import md5
 from urllib import urlencode
+from urlparse import urlparse, urlunparse, parse_qs
 from bs4 import BeautifulSoup
 from mechanize import Browser
 from sqlalchemy import create_engine
-import tempfile
-import zipfile
-from ips_vagrant.common import cookiejar
+from ips_vagrant.common import cookiejar, byteify
 from ips_vagrant.common.progress import ProgressBar, Echo
-from . import DevTools
 
 
+version = None
+
+
+# noinspection PyMethodMayBeStatic
 class Installer(object):
+
+    # License fields
+    FIELD_LICENSE_KEY = 'lkey'
+
+    # Server Detail fields
+    FIELD_SERVER_SQL_HOST = 'sql_host'
+    FIELD_SERVER_SQL_USER = 'sql_user'
+    FIELD_SERVER_SQL_PASS = 'sql_pass'
+    FIELD_SERVER_SQL_DATABASE = 'sql_database'
+
+    # Admin fields
+    FIELD_ADMIN_USER = 'admin_user'
+    FIELD_ADMIN_PASS = 'admin_pass1'
+    FIELD_ADMIN_PASS_CONFIRM = 'admin_pass2'
+    FIELD_ADMIN_EMAIL = 'admin_email'
 
     def __init__(self, ctx, site):
         """
@@ -36,6 +50,8 @@ class Installer(object):
         )
         self.site = site
         self.mysql = create_engine('mysql://root:secret@localhost')
+
+        self._sessions = {}
 
         self.cookiejar = cookiejar()
         self.cookies = {cookie.name: cookie.value for cookie in self.cookiejar}
@@ -94,7 +110,7 @@ class Installer(object):
         self.browser.select_form(nr=0)
 
         # Set the fields
-        self.browser.form['lkey'] = '{license}-TESTINSTALL'.format(license=self.site.license_key)
+        self.browser.form[self.FIELD_LICENSE_KEY] = '{license}-TESTINSTALL'.format(license=self.site.license_key)
         self.browser.find_control('eula_checkbox').items[0].selected = True  # TODO: User prompt?
 
         # Submit the request
@@ -151,10 +167,10 @@ class Installer(object):
 
         # Set form fields and submit
         self.browser.select_form(nr=0)
-        self.browser.form['sql_host'] = 'localhost'
-        self.browser.form['sql_user'] = db_user
-        self.browser.form['sql_pass'] = db_pass
-        self.browser.form['sql_database'] = db_name
+        self.browser.form[self.FIELD_SERVER_SQL_HOST] = 'localhost'
+        self.browser.form[self.FIELD_SERVER_SQL_USER] = db_user
+        self.browser.form[self.FIELD_SERVER_SQL_PASS] = db_pass
+        self.browser.form[self.FIELD_SERVER_SQL_DATABASE] = db_name
         self.browser.submit()
         p.done()
         self.admin()
@@ -183,10 +199,10 @@ class Installer(object):
             email = click.prompt('Admin email')
             prompted.append('email')
 
-        self.browser.form['admin_user'] = user
-        self.browser.form['admin_pass1'] = password
-        self.browser.form['admin_pass2'] = password
-        self.browser.form['admin_email'] = email
+        self.browser.form[self.FIELD_ADMIN_USER] = user
+        self.browser.form[self.FIELD_ADMIN_PASS] = password
+        self.browser.form[self.FIELD_ADMIN_PASS_CONFIRM] = password
+        self.browser.form[self.FIELD_ADMIN_EMAIL] = email
         p = Echo('Submitting admin information...')
         self.browser.submit()
         p.done()
@@ -203,111 +219,150 @@ class Installer(object):
 
         self.install()
 
-    def install(self):
+    def _start_install(self):
         """
-        Run the actual installation
+        Start the installation
         """
         self._check_title(self.browser.title())
         continue_link = next(self.browser.links(text_regex='Start Installation'))
         self.browser.follow_link(continue_link)
 
-        # Get the MultipleRedirect URL
+    def _get_mr_link(self):
+        """
+        Get the MultipleRedirect URL
+        @rtype: str
+        """
         rsoup = BeautifulSoup(self.browser.response().read(), "html.parser")
-        cj = self.browser._ua_handlers['_cookies'].cookiejar  # TODO
-        mr_link = rsoup.find('div', {'class': 'ipsMultipleRedirect'})['data-url']
-        mr_link += '&' + urlencode({'mr': 'MA=='})
+        mr_link = rsoup.find('a', {'class': 'button'}).get('href')
         self.log.debug('MultipleRedirect link: %s', mr_link)
+        return mr_link
 
-        # Set up the progress bar
-        pbar = ProgressBar(100, 'Running installation...')
-        pbar.start()
+    def _ajax(self, url, method='get', params=None, load_json=True):
+        """
+        Perform an Ajax requests
+        @type   url:        str
+        @type   method:     str
+        @type   params:     dict or None
+        @type   load_json:  bool
+        @return:    Tuple with the decoded JSON response and actual response, or just the response if load_json is False
+        @rtype:     requests.Response or tuple of (dict or list, requests.Response)
+        """
+        if 'ajax' in self._sessions:
+            ajax = self._sessions['ajax']
+        else:
+            self.log.debug('Instantiating a new Ajax session')
+            ajax = requests.Session()
+            ajax.headers.update({'X-Requested-With': 'XMLHttpRequest'})
+            ajax.cookies.update(cookiejar())
+            ajax.verify = False
+            self._sessions['ajax'] = ajax
 
-        # Set up our requests session and get begin the installation
-        s = requests.Session()
-        s.headers.update({'X-Requested-With': 'XMLHttpRequest'})
-        s.cookies.update(cj)
-        s.verify = False
-        r = s.get(mr_link)
-        j = json.loads(r.text)
+        response = ajax.request(method, url, params)
+        self.log.debug('Ajax response: %s', response.text)
+        response.raise_for_status()
 
-        # Loop until we get a redirect json response
-        while True:
-            mr_link += '&' + urlencode({'mr': j[0]})
+        if load_json:
+            return byteify(json.loads(response.text)), response
 
-            try:
-                stage = j[1]
-            except IndexError:
-                stage = 'Installation complete!'
+        return response
 
-            try:
-                progress = round(float(j[2]))
-            except IndexError:
-                progress = 0
+    def _parse_response(self, url, json_response):
+        """
+        Parse response data and return the next request URL
+        @type   url:            str
+        @type   json_response:  list or dict
+        @rtype: str
+        """
+        parts = list(urlparse(url))
+        query = parse_qs(parts[4])
+        query['mr'] = str(json_response[0]).replace('\'', '"')
+        parts[4] = urlencode(query, True)
+        return urlunparse(parts)
 
-            r = s.get(mr_link)
-            j = json.loads(r.text)
-            self.log.debug('MultipleRedirect JSON response: %s', str(j))
-            pbar.update(min([progress, 100]), stage)  # NOTE: Response may return progress values above 100
+    def _get_stage(self, json_response):
+        """
+        Get the current installation stage
+        @type   json_response:  list or dict
+        @rtype: str
+        """
+        try:
+            return json_response[1]
+        except IndexError:
+            return 'Installation complete!'
 
-            # We're done, finalize the installation and break
-            if 'redirect' in j:
-                pbar.finish()
-                break
+    def _get_progress(self, json_response):
+        """
+        Get the current installation progress
+        @type   json_response:  list or dict
+        @rtype: str
+        """
+        try:
+            return round(float(json_response[2]))
+        except IndexError:
+            return 0
 
-        p = Echo('Finalizing...')
-        r = s.get(j['redirect'])
-        p.done()
+    def _check_if_complete(self, url, json_response):
+        """
+        Check if a request has been completed and return the redirect URL if it has
+        @type   url:            str
+        @type   json_response:  list or dict
+        @rtype: str or bool
+        """
+        if 'redirect' in json_response and isinstance(json_response, dict):
+            return json_response['redirect']
 
-        # Install developer tools
-        if self.site.in_dev:
-            p = Echo('Fetching Developer Tools version information...')
-            dev_tools = DevTools(self.ctx, self.site).get()
-            p.done()
-            p = Echo('Downloading the most recent Developer Tools release...')
-            filename = dev_tools.filename if dev_tools.filename and self.ctx.cache else dev_tools.download()
-            p.done()
+        return False
 
-            # Extract dev files
-            p = Echo('Extracting Developer Tools...')
-            tmpdir = tempfile.mkdtemp('ips')
-            dev_tools_zip = os.path.join(tmpdir, 'dev_tools.zip')
-            dev_tools_dir = os.path.join(tmpdir, 'dev_tools')
-            os.mkdir(dev_tools_dir)
-
-            shutil.copyfile(filename, dev_tools_zip)
-            with zipfile.ZipFile(dev_tools_zip) as z:
-                namelist = z.namelist()
-                if re.match(r'^\d+\/?$', namelist[0]):
-                    self.log.debug('Developer Tools directory matched: %s', namelist[0])
-                else:
-                    self.log.error('No developer tools directory matched, unable to continue')
-                    raise Exception('Unrecognized dev tools file format, aborting')
-
-                z.extractall(dev_tools_dir)
-                self.log.debug('Developer Tools extracted to: %s', dev_tools_dir)
-                dev_tmpdir = os.path.join(dev_tools_dir, namelist[0])
-                for filename in os.listdir(dev_tmpdir):
-                    shutil.copy(os.path.join(dev_tmpdir, filename), os.path.join(self.site.root, filename))
-
-                self.log.info('Developer Tools copied to: %s', self.site.root)
-            shutil.rmtree(tmpdir)
-            p.done()
-
-            p = Echo('Putting IPS into IN_DEV mode...')
-            const_path = os.path.join(self.site.root, 'constants.php')
-            with open(const_path, 'w+') as f:
-                f.write('<?php')
-                f.write('')
-                f.write("define( 'IN_DEV', TRUE );")
-            p.done()
-
-        # Get the link to our community homepage
-        rsoup = BeautifulSoup(r.text, "html.parser")
+    def _finalize(self, response):
+        """
+        Finalize the installation and display a link to the suite
+        """
+        rsoup = BeautifulSoup(response.text, "html.parser")
         click.echo('------')
         click.secho(rsoup.find('h1', id='elInstaller_welcome').text.strip(), fg='yellow', bold=True)
         click.secho(rsoup.find('p', {'class': 'ipsType_light'}).text.strip(), fg='yellow', dim=True)
         link = rsoup.find('a', {'class': 'ipsButton_primary'}).get('href')
         click.echo(click.style('Go to the suite: ', bold=True) + link + '\n')
+
+    # noinspection PyUnboundLocalVariable
+    def install(self):
+        """
+        Run the actual installation
+        """
+        self._start_install()
+        mr_link = self._get_mr_link()
+
+        # Set up the progress bar
+        pbar = ProgressBar(100, 'Running installation...')
+        pbar.start()
+        mr_j, mr_r = self._ajax(mr_link)
+
+        # Loop until we get a redirect json response
+        while True:
+            mr_link = self._parse_response(mr_link, mr_j)
+
+            stage = self._get_stage(mr_j)
+            progress = self._get_progress(mr_j)
+            mr_j, mr_r = self._ajax(mr_link)
+
+            pbar.update(min([progress, 100]), stage)  # NOTE: Response may return progress values above 100
+
+            # If we're done, finalize the installation and break
+            redirect = self._check_if_complete(mr_link, mr_j)
+            if redirect:
+                pbar.finish()
+                break
+
+        p = Echo('Finalizing...')
+        mr_r = self._ajax(redirect, load_json=False)
+        p.done()
+
+        # Install developer tools
+        if self.site.in_dev:
+            pass
+
+        # Get the link to our community homepage
+        self._finalize(mr_r)
 
 
 class InstallationError(Exception):

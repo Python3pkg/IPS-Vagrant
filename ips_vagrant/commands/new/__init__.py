@@ -11,10 +11,11 @@ from sqlalchemy.sql import collate
 from ips_vagrant.common.progress import Echo
 from ips_vagrant.models.sites import Domain, Site
 from ips_vagrant.cli import pass_context, Context
-from ips_vagrant.common import domain_parse, choice
+from ips_vagrant.common import domain_parse, choice, parse_version
 from ips_vagrant.generators.nginx import ServerBlock
 from ips_vagrant.common.ssl import CertificateFactory
-from ips_vagrant.scrapers import Licenses, Installer
+from ips_vagrant.installer import installer
+from ips_vagrant.scrapers import Licenses
 from ips_vagrant.downloaders import IpsManager
 
 
@@ -22,6 +23,7 @@ from ips_vagrant.downloaders import IpsManager
 @click.option('-n', '--name', prompt='Installation nickname', help='Installation name.')
 @click.option('-d', '--domain', 'dname', prompt='Domain name', envvar='DOMAIN', help='Installation domain name.')
 @click.option('-l', '--license', 'license_key', envvar='LICENSE', help='License key to use for requests.')
+@click.option('-v', '--version', 'ips_version', envvar='VERSION', help='Manually specify a version to install.')
 @click.option('-f', '--force', is_flag=True,
               help='Overwrite any existing files (possibly left over from a broken configuration)')
 @click.option('--enable/--disable', prompt='Do you want to enable this site after installation?', default=True,
@@ -38,7 +40,7 @@ from ips_vagrant.downloaders import IpsManager
 @click.option('--dev/--no-dev', envvar='IPSV_IN_DEV', default=False,
               help='Install developer tools and put the site into dev mode after installation. (Default: False)')
 @pass_context
-def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, install, dev):
+def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gzip, cache, install, dev):
     """
     Downloads and installs a new instance of the latest Invision Power Suite release.
     """
@@ -83,8 +85,14 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     p = Echo('Fetching IPS version information...')
     ips = IpsManager(ctx, lmeta)
     p.done()
-    p = Echo('Downloading the most recent IPS release...')
-    filename = ips.get(ips.latest, cache)
+    if ips_version:
+        ips_version = parse_version(ips_version)
+        v = ips.versions[ips_version.version]
+        p = Echo('Fetching IPS version {iv}'.format(iv=ips_version))
+    else:
+        p = Echo('Downloading the most recent IPS release...')
+        v = ips.latest
+    filename = ips.get(v, cache)
     p.done()
 
     # Parse the specific domain and make sure it's valid
@@ -236,9 +244,9 @@ def cli(ctx, name, dname, license_key, force, enable, ssl, spdy, gzip, cache, in
     # Run the installation
     if install:
         p = Echo('Initializing installer...')
-        installer = Installer(ctx, site)
+        i = installer(v, ctx, site)
         p.done()
-        installer.start()
+        i.start()
     else:
         click.echo('------')
         click.secho('IPS is now ready to be installed. To proceed with the installation, follow the link below',
