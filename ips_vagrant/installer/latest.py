@@ -239,7 +239,7 @@ class Installer(object):
 
     def _ajax(self, url, method='get', params=None, load_json=True, raise_request=True):
         """
-        Perform an Ajax requests
+        Perform an Ajax request
         @type   url:        str
         @type   method:     str
         @type   params:     dict or None
@@ -264,6 +264,32 @@ class Installer(object):
 
         if load_json:
             return byteify(json.loads(response.text)), response
+
+        return response
+
+    def _request(self, url, method='get', params=None, raise_request=True):
+        """
+        Perform a standard HTTP request
+        @type   url:            str
+        @type   method:         str
+        @type   params:         dict or None
+        @param  raise_request:  Raise exceptions for HTTP status errors
+        @type   raise_request:  bool
+        @rtype: requests.Response
+        """
+        if 'http' in self._sessions:
+            http = self._sessions['http']
+        else:
+            self.log.debug('Instantiating a new HTTP session')
+            http = requests.Session()
+            http.cookies.update(cookiejar())
+            http.verify = False
+            self._sessions['http'] = http
+
+        response = http.request(method, url, params)
+        self.log.debug('HTTP response code: %s', response.status_code)
+        if raise_request:
+            response.raise_for_status()
 
         return response
 
@@ -356,7 +382,7 @@ class Installer(object):
                 break
 
         p = Echo('Finalizing...')
-        mr_r = self._ajax(redirect, load_json=False, raise_request=False)
+        mr_r = self._request(redirect, raise_request=False)
         p.done()
 
         # Install developer tools
