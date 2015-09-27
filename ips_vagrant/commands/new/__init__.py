@@ -113,8 +113,8 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
                         .format(s=name, d=dname))
 
     # Create the site database entry
-    site = Site(name=name, domain=domain, license_key=lmeta.license_key, ssl=ssl, spdy=spdy, gzip=gzip,
-                enabled=enable, in_dev=dev)
+    site = Site(name=name, domain=domain, license_key=lmeta.license_key, version=v.version, ssl=ssl, spdy=spdy,
+                gzip=gzip, enabled=enable, in_dev=dev)
     ctx.db.add(site)
     p.done()
 

@@ -7,7 +7,7 @@ from zipfile import ZipFile, BadZipfile
 import re
 from bs4 import BeautifulSoup
 from mechanize import Browser
-from ips_vagrant.common import http_session, parse_version
+from ips_vagrant.common import http_session, parse_version, unparse_version
 from ips_vagrant.scrapers.errors import HtmlParserError
 
 
@@ -175,7 +175,8 @@ class IpsMeta(object):
             os.makedirs(self.ips_manager.path, 0o755)
 
         # Process our file download
-        self.filepath = self.filepath or os.path.join(self.ips_manager.path, '{v}.zip'.format(v=self.version))
+        self.filepath = self.filepath or os.path.join(self.ips_manager.path, '{v}.zip'
+                                                      .format(v=unparse_version(self.version)))
         with open(self.filepath, 'wb') as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:  # filter out keep-alive new chunks

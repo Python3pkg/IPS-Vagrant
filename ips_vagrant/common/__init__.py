@@ -109,6 +109,15 @@ def parse_version(vstring):
     return version
 
 
+def unparse_version(vtuple):
+    """
+    Return the textual representation of a version tuple
+    @type   vtuple: tuple
+    @rtype: str
+    """
+    return '.'.join(map(str, vtuple))
+
+
 def byteify(input):
     if isinstance(input, dict):
         return {byteify(key):byteify(value) for key,value in input.iteritems()}

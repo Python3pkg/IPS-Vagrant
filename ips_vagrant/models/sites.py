@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, Text, ForeignKey, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
+from ips_vagrant.common import unparse_version
 
 
 Base = sqlahelper.get_base()
@@ -81,6 +82,7 @@ class Site(Base):
     domain_id = Column(Integer, ForeignKey('domains.id'), nullable=False)
     root = Column(Text, nullable=False)
     license_key = Column(Text, nullable=False)
+    _version = Column('version', Text, nullable=False)
     ssl = Column(Integer, server_default=text("0"))
     ssl_key = Column(Text, nullable=True)
     ssl_certificate = Column(Text, nullable=True)
@@ -110,3 +112,22 @@ class Site(Base):
         self._name = value
         self.slug = re.sub('[^0-9a-zA-Z_-]+', '_', str(value).lower())
         self.root = os.path.abspath(os.path.join(_cfg.get('Paths', 'HttpRoot'), self.domain.name, self.slug))
+
+    @hybrid_property
+    def version(self):
+        """
+        Get the sites IPS version
+        @rtype: str
+        """
+        return self._version
+
+    @version.setter
+    def version(self, value):
+        """
+        Save the Site's version from a string or version tuple
+        @type   value:  tuple or str
+        """
+        if isinstance(value, tuple):
+            value = unparse_version(value)
+
+        self._version = value

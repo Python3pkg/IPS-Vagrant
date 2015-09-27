@@ -31,6 +31,7 @@ def upgrade():
     sa.Column('domain_id', sa.Integer(), nullable=False),
     sa.Column('root', sa.Text(), nullable=False),
     sa.Column('license_key', sa.Text(), nullable=False),
+    sa.Column('version', sa.Text(), nullable=False),
     sa.Column('ssl', sa.Integer(), server_default=sa.text(u'0'), nullable=True),
     sa.Column('ssl_key', sa.Text(), nullable=True),
     sa.Column('ssl_certificate', sa.Text(), nullable=True),
