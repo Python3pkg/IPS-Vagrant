@@ -47,7 +47,7 @@ class IpsManager(object):
         for archive in archives:
             try:
                 version = self._read_zip(archive)
-                self.versions[version.version] = IpsMeta(self, version, filepath=archive)
+                self.versions[version.version] = IpsMeta(self, version.version, filepath=archive)
             except BadZipfile as e:
                 self.log.warn('Unreadable zip archive in IPS versions directory (%s): %s', e.message, archive)
 
@@ -80,7 +80,7 @@ class IpsManager(object):
             self.versions[version.version].request = ('post', url, {'version': 'latest'})
             return
 
-        self.versions[version.version] = IpsMeta(self, version, request=('post', url, {'version': 'latest'}))
+        self.versions[version.version] = IpsMeta(self, version.version, request=('post', url, {'version': 'latest'}))
 
     def _read_zip(self, filepath):
         """

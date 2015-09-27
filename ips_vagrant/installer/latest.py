@@ -237,7 +237,7 @@ class Installer(object):
         self.log.debug('MultipleRedirect link: %s', mr_link)
         return mr_link
 
-    def _ajax(self, url, method='get', params=None, load_json=True):
+    def _ajax(self, url, method='get', params=None, load_json=True, raise_request=True):
         """
         Perform an Ajax requests
         @type   url:        str
@@ -259,7 +259,8 @@ class Installer(object):
 
         response = ajax.request(method, url, params)
         self.log.debug('Ajax response: %s', response.text)
-        response.raise_for_status()
+        if raise_request:
+            response.raise_for_status()
 
         if load_json:
             return byteify(json.loads(response.text)), response
@@ -309,6 +310,7 @@ class Installer(object):
         @rtype: str or bool
         """
         if 'redirect' in json_response and isinstance(json_response, dict):
+            self.log.info('Installation complete')
             return json_response['redirect']
 
         return False
@@ -354,7 +356,7 @@ class Installer(object):
                 break
 
         p = Echo('Finalizing...')
-        mr_r = self._ajax(redirect, load_json=False)
+        mr_r = self._ajax(redirect, load_json=False, raise_request=False)
         p.done()
 
         # Install developer tools

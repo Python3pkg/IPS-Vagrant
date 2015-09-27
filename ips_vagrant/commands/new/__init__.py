@@ -244,7 +244,7 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
     # Run the installation
     if install:
         p = Echo('Initializing installer...')
-        i = installer(v, ctx, site)
+        i = installer(v.version, ctx, site)
         p.done()
         i.start()
     else:
