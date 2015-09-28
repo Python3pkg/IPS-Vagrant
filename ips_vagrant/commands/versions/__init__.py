@@ -17,7 +17,14 @@ def cli(ctx, resource):
     """
     log = logging.getLogger('ipsv.setup')
     assert isinstance(ctx, Context)
-    
-    resource = IpsManager(ctx)
-    for r in resource.versions.values():
-        click.secho('.'.join(map(str, r.version)), bold=True)
+
+    resource = str(resource).lower()
+
+    if resource == 'ips':
+        resource = IpsManager(ctx)
+        for r in resource.versions.values():
+            click.secho('.'.join(map(str, r.version)), bold=True)
+        return
+
+    if resource in ('dev_tools', 'dev tools'):
+        resource = ''

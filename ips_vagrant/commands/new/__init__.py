@@ -9,9 +9,10 @@ import tempfile
 import subprocess
 from sqlalchemy.sql import collate
 from ips_vagrant.common.progress import Echo
+from ips_vagrant.common.version import Version
 from ips_vagrant.models.sites import Domain, Site
 from ips_vagrant.cli import pass_context, Context
-from ips_vagrant.common import domain_parse, choice, parse_version
+from ips_vagrant.common import domain_parse, choice
 from ips_vagrant.generators.nginx import ServerBlock
 from ips_vagrant.common.ssl import CertificateFactory
 from ips_vagrant.installer import installer
@@ -86,9 +87,9 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
     ips = IpsManager(ctx, lmeta)
     p.done()
     if ips_version:
-        ips_version = parse_version(ips_version)
-        v = ips.versions[ips_version.version]
-        p = Echo('Fetching IPS version {iv}'.format(iv=ips_version))
+        ips_version = Version(ips_version)
+        v = ips.versions[ips_version.vtuple]
+        p = Echo('Fetching IPS version {iv}'.format(iv=ips_version.vstring))
     else:
         p = Echo('Downloading the most recent IPS release...')
         v = ips.latest
@@ -113,7 +114,7 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
                         .format(s=name, d=dname))
 
     # Create the site database entry
-    site = Site(name=name, domain=domain, license_key=lmeta.license_key, version=v.version, ssl=ssl, spdy=spdy,
+    site = Site(name=name, domain=domain, license_key=lmeta.license_key, version=v.version.vstring, ssl=ssl, spdy=spdy,
                 gzip=gzip, enabled=enable, in_dev=dev)
     ctx.db.add(site)
     p.done()
