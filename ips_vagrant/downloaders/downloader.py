@@ -26,6 +26,7 @@ class DownloadManager(object):
         self.log = logging.getLogger('ipsv.downloader')
         self.session = http_session(ctx.cookiejar)
         self.meta_class = meta_class
+        self.meta_name = type(self.meta_class).__name__
 
         self.path = os.path.join(self.ctx.config.get('Paths', 'Data'), 'versions')
         self.versions = OrderedDict()
@@ -35,7 +36,10 @@ class DownloadManager(object):
         Run setup tasks after initialization
         """
         self._populate_local()
-        self._populate_latest()
+        try:
+            self._populate_latest()
+        except Exception as e:
+            self.log.exception('Unable to retrieve latest %s version information', self.meta_name)
         self._sort()
 
     def _sort(self):
@@ -80,14 +84,13 @@ class DownloadManager(object):
         @type   use_cache:  bool
         @rtype: str
         """
-        type_name = type(self.meta_class).__name__
-        self.log.info('Retrieving %s version %s', type_name, version.version)
+        self.log.info('Retrieving %s version %s', self.meta_name, version.version)
 
         if version.filepath:
             if use_cache:
                 return version.filepath
             else:
-                self.log.info('Ignoring cached %s version: %s', type_name, version.version)
+                self.log.info('Ignoring cached %s version: %s', self.meta_name, version.version)
         elif not use_cache:
             self.log.info("We can't ignore the cache of a version that hasn't been downloaded yet")
 
