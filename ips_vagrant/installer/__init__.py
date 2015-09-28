@@ -28,7 +28,7 @@ def installer(cv, ctx, site):
     for v in versions:
         vstring = '.'.join(map(str, v)) if v else 'latest'
         # cvstring = '.'.join(map(str, cv)) if cv else 'latest'
-        log.debug('Checking if version %s is >= %s', vstring, cv.vstring)
+        log.debug('Checking if version %s >= %s', vstring, cv.vstring)
         if (v is None) or (v >= cv.vtuple):
             log.debug('Changing installer version to %s', vstring)
             iv = v

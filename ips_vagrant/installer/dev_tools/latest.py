@@ -5,7 +5,7 @@ from tempfile import mkdtemp
 from zipfile import ZipFile
 import re
 from ips_vagrant.common.progress import Echo
-from ips_vagrant.downloaders.dev_tools import DevTools
+from ips_vagrant.downloaders.dev_tools import DevToolsManager
 
 
 version = None
@@ -29,11 +29,23 @@ class DevToolsInstaller(object):
         Run the actual installation
         """
         p = Echo('Fetching Developer Tools version information...')
-        dev_tools = DevTools(self.ctx, self.site).get()
+        dev_tools = DevToolsManager(self.ctx, self.site)
         p.done()
-        p = Echo('Downloading the most recent Developer Tools release...')
-        filename = dev_tools.filename if dev_tools.filename and self.ctx.cache else dev_tools.download()
-        p.done()
+        p = Echo('Fetching the required Developer Tools release...')
+        if self.site.version in dev_tools.versions:
+            self.log.info('Dev Tools version matched for this IPS version')
+            dev_version = dev_tools.versions[self.site.version]
+            status = p.OK
+        else:
+            dev_version = None
+            for dv in dev_tools.versions:
+                if (dev_version is None) or (dv <= self.site.version):
+                    dev_version = dev_tools.versions[dv]
+            self.log.warn('No Dev Tools for this IPS release found, using closest match (%s)',
+                          dev_version.version.vstring)
+            status = p.WARN
+        filename = dev_tools.get(dev_version)
+        p.done(status)
 
         # Extract dev files
         p = Echo('Extracting Developer Tools...')
@@ -45,7 +57,7 @@ class DevToolsInstaller(object):
         shutil.copyfile(filename, dev_tools_zip)
         with ZipFile(dev_tools_zip) as z:
             namelist = z.namelist()
-            if re.match(r'^\d+/?$', namelist[0]):
+            if re.match(r'^(\d+)|(dev_[0-9a-zA-Z]{5})/?$', namelist[0]):
                 self.log.debug('Developer Tools directory matched: %s', namelist[0])
             else:
                 self.log.error('No developer tools directory matched, unable to continue')

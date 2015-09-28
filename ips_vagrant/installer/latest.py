@@ -12,7 +12,8 @@ from mechanize import Browser
 from sqlalchemy import create_engine
 from ips_vagrant.common import cookiejar, byteify
 from ips_vagrant.common.progress import ProgressBar, Echo
-
+from ips_vagrant.downloaders.dev_tools import DevToolsManager
+from ips_vagrant.installer.dev_tools.latest import DevToolsInstaller
 
 version = None
 
@@ -387,7 +388,7 @@ class Installer(object):
 
         # Install developer tools
         if self.site.in_dev:
-            pass
+            DevToolsInstaller(self.ctx, self.site).install()
 
         # Get the link to our community homepage
         self._finalize(mr_r)
