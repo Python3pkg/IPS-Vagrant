@@ -83,10 +83,16 @@ class DevToolsManager(DownloadManager):
             namelist = zip.namelist()
             if re.match(r'^\d+/?$', namelist[0]):
                 self.log.debug('Developer Tools directory matched: %s', namelist[0])
-                version_id = namelist[0]
+                version_id = namelist[0].strip('/')
             else:
-                self.log.error('No developer tools directory matched, unable to continue')
-                raise BadZipfile('Unrecognized dev tools file format, aborting')
+                basename = os.path.basename(filepath)
+                match = re.match('^IPS_Developer_Tools_v(\d+).zip$', basename)
+                if match:
+                    self.log.info('Could not parse dev_tools archive, pulling version id from filename instead')
+                    version_id = match.group(1)
+                else:
+                    self.log.error('No developer tools directory matched, unable to continue')
+                    raise BadZipfile('Unrecognized dev tools file format, aborting')
 
             if version_id not in self.ips_versions:
                 raise BadZipfile('Unrecognized version ID (is the dev tools package newer than our latest IPS release?)')

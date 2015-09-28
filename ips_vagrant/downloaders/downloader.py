@@ -52,7 +52,7 @@ class DownloadManager(object):
         for archive in archives:
             try:
                 version = self._read_zip(archive)
-                self.versions[version.version] = self.meta_class(self, version.version, filepath=archive)
+                self.versions[version.vtuple] = self.meta_class(self, version, filepath=archive)
             except BadZipfile as e:
                 self.log.warn('Unreadable zip archive in versions directory (%s): %s', e.message, archive)
 

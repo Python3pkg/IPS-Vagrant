@@ -1,6 +1,7 @@
 import click
 import logging
 from ips_vagrant.downloaders import IpsManager
+from ips_vagrant.downloaders.dev_tools import DevToolsManager
 from ips_vagrant.cli import pass_context, Context
 
 
@@ -14,6 +15,7 @@ def cli(ctx, resource):
     \b
     Available resources:
         ips (default)
+        dev_tools
     """
     log = logging.getLogger('ipsv.setup')
     assert isinstance(ctx, Context)
@@ -23,8 +25,11 @@ def cli(ctx, resource):
     if resource == 'ips':
         resource = IpsManager(ctx)
         for r in resource.versions.values():
-            click.secho('.'.join(map(str, r.version)), bold=True)
+            click.secho(r.version.vstring, bold=True)
         return
 
     if resource in ('dev_tools', 'dev tools'):
-        resource = ''
+        resource = DevToolsManager(ctx)
+        for r in resource.versions.values():
+            click.secho('{v} ({id})'.format(v=r.version.vstring, id=r.version.vid), bold=True)
+        return
