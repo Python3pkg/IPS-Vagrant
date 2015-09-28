@@ -6,4 +6,4 @@ class Version(object):
     def __init__(self, vstring, vid=None):
         self.vstring = vstring
         self.vid = vid
-        self.vtuple = parse_version(vstring)
+        self.vtuple = parse_version(vstring).version
