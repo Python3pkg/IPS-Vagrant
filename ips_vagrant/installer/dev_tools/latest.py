@@ -66,8 +66,18 @@ class DevToolsInstaller(object):
             z.extractall(dev_tools_dir)
             self.log.debug('Developer Tools extracted to: %s', dev_tools_dir)
             dev_tmpdir = os.path.join(dev_tools_dir, namelist[0])
-            for filename in os.listdir(dev_tmpdir):
-                shutil.copy(os.path.join(dev_tmpdir, filename), os.path.join(self.site.root, filename))
+            path = dev_tmpdir
+            for dirname, dirnames, filenames in os.walk(dev_tmpdir):
+                for filepath in dirnames:
+                    site_path = os.path.join(self.site.root, dirname.replace(path, ''), filepath)
+                    if not os.path.exists(site_path):
+                        self.log.debug('Creating directory: %s', site_path)
+                        os.mkdir(site_path, 0o755)
+
+                for filepath in filenames:
+                    tmp_path = os.path.join(dirname, filepath)
+                    site_path = os.path.join(self.site.root, dirname.replace(path, ''), filepath)
+                    shutil.copy(tmp_path, site_path)
 
             self.log.info('Developer Tools copied to: %s', self.site.root)
         shutil.rmtree(tmpdir)
@@ -76,7 +86,7 @@ class DevToolsInstaller(object):
         p = Echo('Putting IPS into IN_DEV mode...')
         const_path = os.path.join(self.site.root, 'constants.php')
         with open(const_path, 'w+') as f:
-            f.write('<?php')
-            f.write('')
+            f.write("<?php\n")
+            f.write("\n")
             f.write("define( 'IN_DEV', TRUE );")
         p.done()
