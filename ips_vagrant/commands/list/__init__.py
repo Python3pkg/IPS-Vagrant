@@ -5,7 +5,7 @@ from ips_vagrant.models.sites import Domain, Site, Session
 
 
 # noinspection PyUnboundLocalVariable
-@click.command('list', short_help='List all domains, or all installations under a specified <domain>.')
+@click.command('list', short_help='List all domains, or all installations under a specified domain.')
 @click.argument('dname', default=False, metavar='<domain>')
 @click.argument('site', default=False, metavar='<site>')
 @pass_context
