@@ -125,6 +125,20 @@ class Site(Base):
             site.filter(Site.domain == domain)
         return site.all()
 
+    @classmethod
+    def get(cls, domain, name):
+        """
+        Get the requested site entry
+        @param  domain: Domain name
+        @type   domain: Domain
+        @param  name:   Site name
+        @type   name:   str
+        @rtype: Domain
+        """
+        Site = cls
+        name = name.lower()
+        return Session.query(Site).filter(Site.domain == domain).filter(Site.name == name).first()
+
     @hybrid_property
     def name(self):
         """
