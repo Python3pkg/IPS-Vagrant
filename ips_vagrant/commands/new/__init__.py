@@ -101,7 +101,7 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
         ssl = dname.scheme == 'https'
     log.debug('Domain name parsed: %s', dname)
 
-    domain = Domain.get_or_create(ctx.db, dname)
+    domain = Domain.get_or_create(dname)
 
     # Make sure this site does not already exist
     p = Echo('Constructing site data...')

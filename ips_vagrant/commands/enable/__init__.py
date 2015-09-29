@@ -1,12 +1,16 @@
+import os
 import click
-from ips_vagrant.cli import Context
+import subprocess
+from ips_vagrant.cli import Context, pass_context
 from ips_vagrant.common import domain_parse
+from ips_vagrant.common.progress import Echo
 from ips_vagrant.models.sites import Session, Domain, Site
 
 
 @click.command('enable', short_help='Enable an IPS installation.')
-@click.argument('dname', default=False, metavar='<domain>')
-@click.argument('site', default=False, metavar='<site>')
+@click.argument('dname', metavar='<domain>')
+@click.argument('site', metavar='<site>')
+@pass_context
 def cli(ctx, dname, site):
     """
     Enable the <site> under the specified <domain>
@@ -25,4 +29,12 @@ def cli(ctx, dname, site):
         click.secho('No such site: {site}'.format(site=site_name), fg='red', bold=True, err=True)
         return
 
+    p = Echo('Constructing paths and configuration files...')
     site.enable()
+    p.done()
+
+    # Restart Nginx
+    p = Echo('Restarting web server...')
+    FNULL = open(os.devnull, 'w')
+    subprocess.check_call(['/etc/init.d/nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
+    p.done()
