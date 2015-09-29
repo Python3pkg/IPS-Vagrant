@@ -7,3 +7,6 @@ class Version(object):
         self.vstring = vstring
         self.vid = vid
         self.vtuple = parse_version(vstring).version
+
+    def __repr__(self):
+        return "{str} ({id})".format(str=self.vstring, id=self.vid)
