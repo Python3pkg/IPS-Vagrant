@@ -149,9 +149,10 @@ class Installer(object):
         p = Echo('Creating MySQL database...')
 
         # Create the database
-        db_name = 'ipsv_{slug}'.format(slug=self.site.slug)[:64]
+        md5hex = md5(self.site.domain.name + self.site.slug).hexdigest()
+        db_name = 'ipsv_{md5}'.format(md5=md5hex)
         # MySQL usernames are limited to 16 characters max
-        db_user = 'ipsv_{md5}'.format(md5=md5(self.site.domain.name + self.site.slug).hexdigest()[:11])
+        db_user = 'ipsv_{md5}'.format(md5=md5hex[:11])
         rand_pass = ''.join(random.SystemRandom()
                             .choice(string.ascii_letters + string.digits) for _ in range(random.randint(16, 24)))
         db_pass = rand_pass
@@ -165,6 +166,11 @@ class Installer(object):
         self.site.db_name = db_name
         self.site.db_user = db_user
         self.site.db_pass = db_pass
+        self.ctx.db.commit()
+
+        self.log.debug('MySQL Database Name: %s', db_name)
+        self.log.debug('MySQL Database User: %s', db_user)
+        self.log.debug('MySQL Database Password: %s', db_pass)
 
         # Set form fields and submit
         self.browser.select_form(nr=0)
