@@ -30,7 +30,8 @@ class DevToolsInstaller(object):
         """
         p = Echo('Fetching Developer Tools version information...')
         dev_tools = DevToolsManager(self.ctx, self.site)
-        p.done()
+        status = p.OK if dev_tools.latest.request else p.FAIL
+        p.done(status)
         p = Echo('Fetching the required Developer Tools release...')
         if self.site.version in dev_tools.versions:
             self.log.info('Dev Tools version matched for this IPS version')
