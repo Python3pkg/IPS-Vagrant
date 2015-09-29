@@ -1,6 +1,5 @@
 import os
 import re
-import glob
 import click
 import shutil
 import logging
@@ -13,7 +12,6 @@ from ips_vagrant.common.version import Version
 from ips_vagrant.models.sites import Domain, Site
 from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.common import domain_parse, choice
-from ips_vagrant.generators.nginx import ServerBlock
 from ips_vagrant.common.ssl import CertificateFactory
 from ips_vagrant.installer import installer
 from ips_vagrant.scrapers import Licenses
@@ -122,31 +120,7 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
 
     # Construct the HTTP path
     p = Echo('Constructing paths and configuration files...')
-    if not os.path.exists(site.root):
-        log.debug('Creating HTTP root directory: %s', site.root)
-        os.makedirs(site.root, 0o755)
-
-    # If our new site was enabled, we need to disable any other sites utilizing this domain
-    if site.enabled:
-        log.debug('Disabling all other sites under the domain %s', domain.name)
-        ctx.db.query(Site).filter(Site.id != site.id).filter(Site.domain == domain).update({'enabled': 0})
-
-    # Generate our server block configuration
-    server_block = ServerBlock(site)
-
-    server_config_path = os.path.join(ctx.config.get('Paths', 'NginxSitesAvailable'), domain.name)
-    if not os.path.exists(server_config_path):
-        log.debug('Creating new configuration path: %s', server_config_path)
-        os.makedirs(server_config_path, 0o755)
-
-    server_config_path = os.path.join(server_config_path, '{fn}.conf'.format(fn=site.slug))
-    if os.path.exists(server_config_path):
-        log.warn('Server block configuration file already exists, overwriting: %s', server_config_path)
-        os.remove(server_config_path)
-
-    log.info('Writing Nginx server block configuration file')
-    with open(server_config_path, 'w') as f:
-        f.write(server_block.template)
+    site.write_nginx_config()
     p.done()
 
     # Generate SSL certificates if enabled
@@ -169,28 +143,7 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
 
     # Create a symlink if this site is being enabled
     if site.enabled:
-        sites_enabled_path = ctx.config.get('Paths', 'NginxSitesEnabled')
-        symlink_path = os.path.join(sites_enabled_path, '{domain}-{fn}'.format(domain=domain.name,
-                                                                               fn=os.path.basename(server_config_path)))
-        links = glob.glob(os.path.join(sites_enabled_path, '{domain}-*'.format(domain=domain.name)))
-        for link in links:
-            if os.path.islink(link):
-                log.debug('Removing existing configuration symlink: %s', link)
-                os.unlink(link)
-            else:
-                if not force:
-                    log.error('Configuration symlink path already exists, but it is not a symlink')
-                    raise Exception('Misconfiguration detected: symlink path already exists, but it is not a symlink '
-                                    'and --force was not passed. Unable to continue')
-                log.warn('Configuration symlink path already exists, but it is not a symlink. '
-                         'Removing anyways since --force was set')
-                if os.path.isdir(symlink_path):
-                    shutil.rmtree(symlink_path)
-                else:
-                    os.remove(symlink_path)
-
-        log.info('Enabling Nginx configuration file')
-        os.symlink(server_config_path, symlink_path)
+        site.enable(force)
 
         # Restart Nginx
         p = Echo('Restarting web server...')

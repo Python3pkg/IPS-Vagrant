@@ -1,7 +1,9 @@
 # coding: utf-8
+from glob import glob
 import os
 import re
 import logging
+import shutil
 import ips_vagrant
 from ConfigParser import ConfigParser
 from sqlalchemy import create_engine, collate
@@ -14,6 +16,8 @@ from ips_vagrant.common import unparse_version
 
 # Base = sqlahelper.get_base()
 # Session = sqlahelper.get_session().config(extension=None)
+from ips_vagrant.generators.nginx import ServerBlock
+
 Base = declarative_base()
 metadata = Base.metadata
 
@@ -110,6 +114,10 @@ class Site(Base):
     in_dev = Column(Integer, nullable=True, server_default=text("0"))
     domain = relationship("Domain")
 
+    def __init__(self, *args, **kwargs):
+        self.log = logging.getLogger('ipsv.models.sites.site')
+        super(Site, self).__init__(*args, **kwargs)
+
     @classmethod
     def all(cls, domain=None):
         """
@@ -172,3 +180,77 @@ class Site(Base):
             value = unparse_version(value)
 
         self._version = value
+
+    def enable(self, force=False):
+        """
+        Enable this site
+        """
+        self.log.debug('Disabling all other sites under the domain %s', self.domain.name)
+        Session.query(Site).filter(Site.id != self.id).filter(Site.domain == self.domain).update({'enabled': 0})
+
+        sites_enabled_path = _cfg.get('Paths', 'NginxSitesEnabled')
+        server_config_path = os.path.join(_cfg.get('Paths', 'NginxSitesAvailable'), self.domain.name)
+        symlink_path = os.path.join(sites_enabled_path, '{domain}-{fn}'.format(domain=self.domain.name,
+                                                                               fn=os.path.basename(server_config_path)))
+        links = glob(os.path.join(sites_enabled_path, '{domain}-*'.format(domain=self.domain.name)))
+        for link in links:
+            if os.path.islink(link):
+                self.log.debug('Removing existing configuration symlink: %s', link)
+                os.unlink(link)
+            else:
+                if not force:
+                    self.log.error('Configuration symlink path already exists, but it is not a symlink')
+                    raise Exception('Misconfiguration detected: symlink path already exists, but it is not a symlink '
+                                    'and --force was not passed. Unable to continue')
+                self.log.warn('Configuration symlink path already exists, but it is not a symlink. '
+                              'Removing anyways since --force was set')
+                if os.path.isdir(symlink_path):
+                    shutil.rmtree(symlink_path)
+                else:
+                    os.remove(symlink_path)
+
+        self.log.info('Enabling Nginx configuration file')
+        os.symlink(server_config_path, symlink_path)
+
+        self.enabled = 1
+        Session.commit()
+
+    def disable(self):
+        """
+        Disable this site
+        """
+        sites_enabled_path = _cfg.get('Paths', 'NginxSitesEnabled')
+        server_config_path = os.path.join(_cfg.get('Paths', 'NginxSitesAvailable'), self.domain.name)
+        symlink_path = os.path.join(sites_enabled_path, '{domain}-{fn}'.format(domain=self.domain.name,
+                                                                               fn=os.path.basename(server_config_path)))
+        if os.path.islink(symlink_path):
+            self.log.debug('Removing configuration symlink: %s', symlink_path)
+            os.unlink(symlink_path)
+
+        self.enabled = 0
+        Session.commit()
+
+    def write_nginx_config(self):
+        """
+        Write the Nginx configuration file for this Site
+        """
+        if not os.path.exists(self.root):
+            self.log.debug('Creating HTTP root directory: %s', self.root)
+            os.makedirs(self.root, 0o755)
+
+        # Generate our server block configuration
+        server_block = ServerBlock(self)
+
+        server_config_path = os.path.join(_cfg.get('Paths', 'NginxSitesAvailable'), self.domain.name)
+        if not os.path.exists(server_config_path):
+            self.log.debug('Creating new configuration path: %s', server_config_path)
+            os.makedirs(server_config_path, 0o755)
+
+        server_config_path = os.path.join(server_config_path, '{fn}.conf'.format(fn=self.slug))
+        if os.path.exists(server_config_path):
+            self.log.info('Server block configuration file already exists, overwriting: %s', server_config_path)
+            os.remove(server_config_path)
+
+        self.log.info('Writing Nginx server block configuration file')
+        with open(server_config_path, 'w') as f:
+            f.write(server_block.template)
