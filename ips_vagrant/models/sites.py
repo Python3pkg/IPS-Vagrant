@@ -2,10 +2,9 @@
 import os
 import re
 import logging
-import sqlahelper
 import ips_vagrant
 from ConfigParser import ConfigParser
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, collate
 from sqlalchemy import Column, Integer, Text, ForeignKey, text
 from sqlalchemy.orm import relationship, sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
@@ -136,8 +135,7 @@ class Site(Base):
         @rtype: Domain
         """
         Site = cls
-        name = name.lower()
-        return Session.query(Site).filter(Site.domain == domain).filter(Site.name == name).first()
+        return Session.query(Site).filter(Site.domain == domain).filter(collate(Site.name, 'NOCASE') == name).first()
 
     @hybrid_property
     def name(self):

@@ -26,9 +26,11 @@ def cli(ctx, dname, site):
             return
 
     if site:
+        site_name = site
         site = Site.get(domain, site)
         if not site:
-            click.secho('No such site: {site}'.format(site=site), fg='red', bold=True, err=True)
+            click.secho('No such site: {site}'.format(site=site_name), fg='red', bold=True, err=True)
+            return
 
         click.secho('Name: {n}'.format(n=site.name), bold=True)
         click.secho('Domain: {dn}'.format(dn=site.domain.name), bold=True)
