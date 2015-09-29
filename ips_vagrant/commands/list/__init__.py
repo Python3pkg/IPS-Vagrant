@@ -1,6 +1,6 @@
 import click
 from ips_vagrant.cli import pass_context, Context
-from ips_vagrant.common import domain_parse
+from ips_vagrant.common import domain_parse, styled_status
 from ips_vagrant.models.sites import Domain, Site, Session
 
 
@@ -35,11 +35,12 @@ def cli(ctx, dname, site):
         click.secho('Name: {n}'.format(n=site.name), bold=True)
         click.secho('Domain: {dn}'.format(dn=site.domain.name), bold=True)
         click.secho('Version: {v}'.format(v=site.version), bold=True)
-        click.secho('IN_DEV: {id}'.format(id='Enabled' if site.in_dev else 'Disabled'), bold=True)
         click.secho('License Key: {lk}'.format(lk=site.license_key), bold=True)
-        click.secho('SSL: {s}'.format(s='Enabled' if site.ssl else 'Disabled'), bold=True)
-        click.secho('SPDY: {s}'.format(s='Enabled' if site.spdy else 'Disabled'), bold=True)
-        click.secho('GZIP: {g}'.format(g='Enabled' if site.gzip else 'Disabled'), bold=True)
+        click.secho('Status: {s}'.format(s=styled_status(site.enabled)), bold=True)
+        click.secho('IN_DEV: {id}'.format(id=styled_status(site.in_dev)), bold=True)
+        click.secho('SSL: {s}'.format(s=styled_status(site.ssl)), bold=True)
+        click.secho('SPDY: {s}'.format(s=styled_status(site.spdy)), bold=True)
+        click.secho('GZIP: {g}'.format(g=styled_status(site.gzip)), bold=True)
         return
 
     # Print sites
@@ -53,7 +54,8 @@ def cli(ctx, dname, site):
         # Display site data
         for site in sites:
             prefix = '[DEV] ' if site.in_dev else ''
-            click.secho('{pre}{name} ({ver})'.format(pre=prefix, name=site.name, ver=site.version), bold=True)
+            fg = 'green' if site.enabled else 'white'
+            click.secho('{pre}{name} ({ver})'.format(pre=prefix, name=site.name, ver=site.version), fg=fg, bold=True)
 
         return
 

@@ -40,6 +40,18 @@ def choice(opts, default=1, text='Please make a choice.'):
     return opt[0] if isinstance(opt, tuple) else opt
 
 
+def styled_status(enabled, bold=True):
+    """
+    Generate a styled status string
+    @param  enabled:    Enabled / Disabled boolean
+    @type   enabled:    bool
+    @param  bold:       Display status in bold format
+    @type   bold:       bool
+    @rtype: str
+    """
+    return click.style('Enabled' if enabled else 'Disabled', 'green' if enabled else 'red', bold=bold)
+
+
 def domain_parse(url):
     """
     urlparse wrapper for user input
