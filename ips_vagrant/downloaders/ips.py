@@ -54,7 +54,7 @@ class IpsManager(DownloadManager):
             self.versions[version.vtuple].request = ('post', url, {'version': 'latest'})
             return
 
-        self.versions[version.vtuple] = IpsMeta(self, version.vtuple, request=('post', url, {'version': 'latest'}))
+        self.versions[version.vtuple] = IpsMeta(self, version, request=('post', url, {'version': 'latest'}))
 
     def _read_zip(self, filepath):
         """
