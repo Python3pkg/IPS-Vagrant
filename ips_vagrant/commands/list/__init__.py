@@ -5,7 +5,7 @@ from ips_vagrant.models.sites import Domain, Site, Session
 
 
 @click.command('list', short_help='List all domains, or all installations under a specified <domain>.')
-@click.argument('domain', 'dname', default=None, metavar='<domain>')
+@click.argument('dname', default=False, metavar='<domain>')
 @pass_context
 def cli(ctx, dname):
     """
@@ -20,13 +20,13 @@ def cli(ctx, dname):
 
         # No such domain
         if not domain:
-            click.secho('No such domain: {dn}'.format(dn=dname), color='red', bold=True, err=True)
+            click.secho('No such domain: {dn}'.format(dn=dname), fg='red', bold=True, err=True)
             return
 
         # Get sites
         sites = Site.all(domain)
         if not sites:
-            click.secho('No sites active under domain: {dn}'.format(dn=dname), color='red', bold=True, err=True)
+            click.secho('No sites active under domain: {dn}'.format(dn=dname), fg='red', bold=True, err=True)
             return
 
         # Display site data

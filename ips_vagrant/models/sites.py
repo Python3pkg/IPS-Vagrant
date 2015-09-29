@@ -7,13 +7,15 @@ import ips_vagrant
 from ConfigParser import ConfigParser
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, Text, ForeignKey, text
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, sessionmaker, scoped_session
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from ips_vagrant.common import unparse_version
 
 
-Base = sqlahelper.get_base()
-Session = sqlahelper.get_session()
+# Base = sqlahelper.get_base()
+# Session = sqlahelper.get_session().config(extension=None)
+Base = declarative_base()
 metadata = Base.metadata
 
 _cfg = ConfigParser()
@@ -21,6 +23,9 @@ _cfg.read(os.path.join(os.path.dirname(os.path.realpath(ips_vagrant.__file__)), 
 engine = create_engine("sqlite:////{path}"
                        .format(path=os.path.join(_cfg.get('Paths', 'Data'), 'sites.db')))
 Base.metadata.bind = engine
+
+session_factory = sessionmaker(bind=engine)
+Session = scoped_session(session_factory)
 
 
 class Domain(Base):
@@ -64,6 +69,7 @@ class Domain(Base):
                 .debug('Domain name does not yet exist, creating a new database entry')
             domain = Domain(name=dname, extras=extras)
             Session.add(domain)
+            Session.commit()
 
         return domain
 

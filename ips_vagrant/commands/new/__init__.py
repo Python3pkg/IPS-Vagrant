@@ -103,7 +103,7 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
         ssl = dname.scheme == 'https'
     log.debug('Domain name parsed: %s', dname)
 
-    domain = Domain.get_or_create(dname)
+    domain = Domain.get_or_create(ctx.db, dname)
 
     # Make sure this site does not already exist
     p = Echo('Constructing site data...')
@@ -117,6 +117,7 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
     site = Site(name=name, domain=domain, license_key=lmeta.license_key, version=v.version.vstring, ssl=ssl, spdy=spdy,
                 gzip=gzip, enabled=enable, in_dev=dev)
     ctx.db.add(site)
+    ctx.db.commit()
     p.done()
 
     # Construct the HTTP path
@@ -253,4 +254,3 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
         click.secho('IPS is now ready to be installed. To proceed with the installation, follow the link below',
                     fg='yellow', bold=True)
         click.echo('{schema}://{host}'.format(schema='https' if site.ssl else 'http', host=site.domain.name))
-        return

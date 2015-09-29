@@ -3,10 +3,10 @@ import click
 import logging
 import pkgutil
 import importlib
-import sqlahelper
 from ConfigParser import ConfigParser
 from ips_vagrant import __version__
 from ips_vagrant.scrapers import Login
+from ips_vagrant.models.sites import Session
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix='IPSV', max_content_width=100)
 
@@ -39,7 +39,7 @@ class Context(object):
         Get a loaded database session
         """
         if self.database is NotImplemented:
-            self.database = sqlahelper.get_session()
+            self.database = Session
 
         return self.database
 
