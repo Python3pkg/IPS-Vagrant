@@ -162,7 +162,8 @@ class Echo:
         @type   status: str
         """
         padding = ' ' * (94 - len(self.message))
-        message = '{msg}{pad}[{status}]'.format(msg=self.message, pad=padding, status=status)
+        suffix = click.style(']', fg=self.color, bold=self.bold)
+        message = '{msg}{pad}[{status}{suf}'.format(msg=self.message, pad=padding, status=status, suf=suffix)
         stdout = click.get_text_stream('stdout')
         stdout.write('\r\033[K')
         stdout.flush()
