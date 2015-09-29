@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='IPS Vagrant',
-    version='0.1.0',
+    version='0.2.0',
     description='A management utility for the (unofficial) Invision Power Suite Vagrant development box.',
     long_description='A management utility for the (unofficial) Invision Power Suite Vagrant development box.',
     author='Makoto Fujimoto',
@@ -30,6 +30,5 @@ setup(
             'ipsv = ips_vagrant.cli:cli'
         ]
     },
-    requires=['beautifulsoup4', 'mechanize', 'click', 'requests', 'jinja2', 'alembic', 'sqlahelper', 'progressbar',
-              'pyOpenSSL']
+    requires=['beautifulsoup4', 'mechanize', 'click', 'requests', 'jinja2', 'alembic', 'progressbar', 'pyOpenSSL']
 )
