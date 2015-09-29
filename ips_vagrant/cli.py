@@ -128,9 +128,20 @@ def cli(ctx, verbose, config):
 
     ctx.log = logging.getLogger('ipsv')
     ctx.log.setLevel(log_level)
+
+    # Console logger
+    console_format = logging.Formatter("[%(levelname)s] %(name)s: %(message)s")
     ch = logging.StreamHandler()
     ch.setLevel(log_level)
+    ch.setFormatter(console_format)
     ctx.log.addHandler(ch)
+
+    # File logger
+    file_format = logging.Formatter("[%(asctime)s] [%(levelname)s] %(name)s: %(message)s")
+    file_logger = logging.FileHandler(os.path.join(ctx.config.get('Paths', 'Log'), 'ipsv.log'))
+    file_logger.setLevel(log_level)
+    file_logger.setFormatter(file_format)
+    ctx.log.addHandler(file_logger)
 
     # Load the configuration
     if os.path.isfile(config):
