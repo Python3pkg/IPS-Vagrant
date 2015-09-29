@@ -35,6 +35,15 @@ class Domain(Base):
     sites = relationship("Site")
 
     @classmethod
+    def all(cls):
+        """
+        Return all domains
+        @rtype: list of Domain
+        """
+        Domain = cls
+        return Session.query(Domain).all()
+
+    @classmethod
     def get_or_create(cls, dname):
         """
         Get the requested domain, or create it if it doesn't exist already
@@ -95,6 +104,20 @@ class Site(Base):
     enabled = Column(Integer, server_default=text("0"))
     in_dev = Column(Integer, nullable=True, server_default=text("0"))
     domain = relationship("Domain")
+
+    @classmethod
+    def all(cls, domain=None):
+        """
+        Return all sites
+        @param  domain: The domain to filter by
+        @type   domain: Domain
+        @rtype: list of Site
+        """
+        Site = cls
+        site = Session.query(Site)
+        if domain:
+            site.filter(Site.domain == domain)
+        return site.all()
 
     @hybrid_property
     def name(self):
