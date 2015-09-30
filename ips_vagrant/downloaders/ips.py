@@ -23,6 +23,8 @@ class IpsManager(DownloadManager):
         self.log = logging.getLogger('ipsv.downloader.ips')
         self.license = license
         self.path = os.path.join(self.path, 'ips')
+        self.dev_path = os.path.join(self.path, 'dev')
+        self.dev_version = None
         self._setup()
 
     def _populate_latest(self):
@@ -47,6 +49,19 @@ class IpsManager(DownloadManager):
         version = Version(form.find('label', {'for': 'version_latest'}).text)
         self.log.info('Latest IPS version: %s', version.vstring)
         url = form.get('action')
+
+        # Parse the response for a download link to the latest development release
+        dev_version = Version(form.find('label', {'for': 'version_dev'}).text)
+        if dev_version:
+            self.log.info('Latest IPS development version: %s', version.vstring)
+            dev_url = form.get('action')
+
+            if dev_version.vtuple in self.versions:
+                self.dev_version = self.versions.pop(dev_version.vtuple)
+                self.dev_version.request = ('post', url, {'version': 'latestdev'})
+            else:
+                self.dev_version = IpsMeta(self, dev_version, request=('post', dev_url, {'version': 'latestdev'}),
+                                           dev=True)
 
         # If we have a cache for this version, just add our url to it
         if version.vtuple in self.versions:
