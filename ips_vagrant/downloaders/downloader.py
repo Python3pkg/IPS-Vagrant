@@ -26,9 +26,10 @@ class DownloadManager(object):
         self.log = logging.getLogger('ipsv.downloader')
         self.session = http_session(ctx.cookiejar)
         self.meta_class = meta_class
-        self.meta_name = type(self.meta_class).__name__
+        self.meta_name = self.meta_class.__name__
 
         self.path = os.path.join(self.ctx.config.get('Paths', 'Data'), 'versions')
+        self.dev_path = NotImplemented
         self.versions = OrderedDict()
 
     def _setup(self):
@@ -106,17 +107,21 @@ class DownloadMeta(object):
     """
     Version metadata container
     """
-    def __init__(self, manager, version, filepath=None, request=None):
+    def __init__(self, manager, version, filepath=None, request=None, dev=False):
         """
         @type   manaer:     DownloadManager
         @type   version:    ips_vagrant.common.version.Version
         @type   filepath:   str or None
         @type   request:    tuple or None (method, url, params)
+        @param  dev:        Indicates a development version
+        @type   dev:        bool
         """
         self.manager = manager
         self.filepath = filepath
         self.version = version
         self.request = request
+        self.dev = dev
+        self.basedir = self.manager.dev_path if dev else self.manager.path
         self.log = logging.getLogger('ipsv.downloader.meta')
 
         self.session = self.manager.session
@@ -141,12 +146,13 @@ class DownloadMeta(object):
             os.remove(self.filepath)
 
         # Make sure our versions data directory exists
-        if not os.path.isdir(os.path.join(self.manager.path)):
+        if not os.path.isdir(self.basedir):
             self.log.debug('Creating versions data directory')
-            os.makedirs(self.manager.path, 0o755)
+            os.makedirs(self.basedir, 0o755)
 
         # Process our file download
-        self.filepath = self.filepath or os.path.join(self.manager.path, '{v}.zip'.format(v=self.version.vstring))
+        vslug = self.version.vstring.replace(' ', '-')
+        self.filepath = self.filepath or os.path.join(self.basedir, '{v}.zip'.format(v=vslug))
         with open(self.filepath, 'wb') as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:  # filter out keep-alive new chunks

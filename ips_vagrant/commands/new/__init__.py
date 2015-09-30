@@ -85,12 +85,19 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
     ips = IpsManager(ctx, lmeta)
     p.done()
     if ips_version:
-        ips_version = Version(ips_version)
-        v = ips.versions[ips_version.vtuple]
-        p = Echo('Fetching IPS version {iv}'.format(iv=ips_version.vstring))
+        if ips_version == 'latest_dev':
+            v = ips.dev_version
+            if not v:
+                click.secho('There is no IPS development release available for download', err=True, fg='red', bold=True)
+                raise Exception('There is no IPS development release available for download')
+            p = Echo('Downloading IPS development release {vs}...'.format(vs=v.version.vstring))
+        else:
+            ips_version = Version(ips_version)
+            v = ips.versions[ips_version.vtuple]
+            p = Echo('Fetching IPS version {iv}'.format(iv=ips_version.vstring))
     else:
-        p = Echo('Downloading the most recent IPS release...')
         v = ips.latest
+        p = Echo('Downloading IPS release {vs}...'.format(vs=v.version.vstring))
     filename = ips.get(v, cache)
     p.done()
 
