@@ -29,6 +29,7 @@ class DownloadManager(object):
         self.meta_name = self.meta_class.__name__
 
         self.path = os.path.join(self.ctx.config.get('Paths', 'Data'), 'versions')
+        self.dev_path = NotImplemented
         self.versions = OrderedDict()
 
     def _setup(self):
