@@ -55,13 +55,7 @@ class IpsManager(DownloadManager):
         if dev_version:
             self.log.info('Latest IPS development version: %s', version.vstring)
             dev_url = form.get('action')
-
-            if dev_version.vtuple in self.versions:
-                self.dev_version = self.versions.pop(dev_version.vtuple)
-                self.dev_version.request = ('post', url, {'version': 'latestdev'})
-            else:
-                self.dev_version = IpsMeta(self, dev_version, request=('post', dev_url, {'version': 'latestdev'}),
-                                           dev=True)
+            self.dev_version = IpsMeta(self, dev_version, request=('post', dev_url, {'version': 'latestdev'}), dev=True)
 
         # If we have a cache for this version, just add our url to it
         if version.vtuple in self.versions:
