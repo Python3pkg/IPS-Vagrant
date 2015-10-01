@@ -196,41 +196,39 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
         p.done()
         p = MarkerProgressBar('Copying setup files...')
         setup_tmpdir = os.path.join(setup_dir, namelist[0])
-        for dirname, dirnames, filenames in os.walk(setup_tmpdir):
+        for dirname, dirnames, filenames in p(os.walk(setup_tmpdir)):
             for filepath in dirnames:
                 site_path = os.path.join(site.root, dirname.replace(setup_tmpdir, ''), filepath)
                 if not os.path.exists(site_path):
                     log.debug('Creating directory: %s', site_path)
                     os.mkdir(site_path, 0o755)
-                    p.update()
 
             for filepath in filenames:
                 tmp_path = os.path.join(dirname, filepath)
                 site_path = os.path.join(site.root, dirname.replace(setup_tmpdir, ''), filepath)
                 shutil.copy(tmp_path, site_path)
-                p.update()
 
         log.info('Setup files copied to: %s', site.root)
     shutil.rmtree(tmpdir)
-    p.finish()
 
     # Apply proper permissions
-    p = Echo('Setting file permissions...')
+    # p = MarkerProgressBar('Setting file permissions...')
     writeable_dirs = ['uploads', 'plugins', 'applications', 'datastore']
     
     for wdir in writeable_dirs:
         log.debug('Setting file permissions in %s', wdir)
         os.chmod(os.path.join(site.root, wdir), 0o777)
-        for dirname, dirnames, filenames in os.walk(os.path.join(site.root, wdir)):
+        p = MarkerProgressBar('Setting file permissions...', nl=False)
+        for dirname, dirnames, filenames in p(os.walk(os.path.join(site.root, wdir))):
             for filename in filenames:
                 os.chmod(os.path.join(dirname, filename), 0o666)
 
             for filename in dirnames:
                 os.chmod(os.path.join(dirname, filename), 0o777)
+    Echo('Setting file permissions...').done()
 
     shutil.move(os.path.join(site.root, 'conf_global.dist.php'), os.path.join(site.root, 'conf_global.php'))
     os.chmod(os.path.join(site.root, 'conf_global.php'), 0o777)
-    p.done()
 
     # Run the installation
     if install:
