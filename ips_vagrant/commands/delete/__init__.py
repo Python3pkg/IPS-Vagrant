@@ -89,7 +89,7 @@ def delete_single(site, domain, delete_code=False, no_prompt=False):
 
     # Restart Nginx
     FNULL = open(os.devnull, 'w')
-    subprocess.check_call(['/etc/init.d/nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
+    subprocess.check_call(['service', 'nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
 
 
 def delete_all(domain, delete_code=False, no_prompt=False):
@@ -139,7 +139,7 @@ def delete_all(domain, delete_code=False, no_prompt=False):
 
     # Restart Nginx
     FNULL = open(os.devnull, 'w')
-    subprocess.check_call(['/etc/init.d/nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
+    subprocess.check_call(['service', 'nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
 
 
 def _remove_code(site):
