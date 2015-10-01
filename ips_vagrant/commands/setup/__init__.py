@@ -82,9 +82,12 @@ def cli(ctx):
 
     # Disable the default server block
     p = Echo('Configuring Nginx...')
-    default_block = os.path.join(ctx.config.get('Paths', 'NginxSitesAvailable'), 'default')
-    if os.path.isfile(default_block):
-        os.remove(default_block)
+    default_available = os.path.join(ctx.config.get('Paths', 'NginxSitesAvailable'), 'default')
+    default_enabled = os.path.join(ctx.config.get('Paths', 'NginxSitesEnabled'), 'default')
+    if os.path.isfile(default_available):
+        os.remove(default_available)
+    if os.path.islink(default_enabled):
+        os.unlink(default_enabled)
     p.done()
 
     # Restart Nginx
