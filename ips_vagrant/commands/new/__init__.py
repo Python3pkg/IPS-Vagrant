@@ -7,7 +7,7 @@ import zipfile
 import tempfile
 import subprocess
 from sqlalchemy.sql import collate
-from ips_vagrant.common.progress import Echo
+from ips_vagrant.common.progress import Echo, MarkerProgressBar
 from ips_vagrant.common.version import Version
 from ips_vagrant.models.sites import Domain, Site
 from ips_vagrant.cli import pass_context, Context
@@ -116,7 +116,8 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
     if site:
         p.done(p.FAIL)
         log.error('Site already exists')
-        click.secho('An installation named "{s}" has already been created for the domain {d}'.format(s=name, d=dname),
+        click.secho('An installation named "{s}" has already been created for the domain {d}'
+                    .format(s=name, d=dname.hostname),
                     err=True, fg='red', bold=True)
         raise click.Abort
 
@@ -124,18 +125,21 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
     site = Site(name=name, domain=domain, license_key=lmeta.license_key, version=v.version.vstring, ssl=ssl, spdy=spdy,
                 gzip=gzip, enabled=enable, in_dev=dev)
 
+    status = p.OK
     if os.path.exists(site.root):
         if not force:
+            p.done(p.FAIL)
             click.secho("Installation path already exists and --force was not passed:\n{p}".format(p=site.root),
                         err=True, fg='red', bold=True)
             log.info('Aborting installation, path already exists: {p}'.format(p=site.root))
             raise click.Abort
 
         log.warn('Overwriting existing installation path: {p}'.format(p=site.root))
+        status = p.WARN
 
     ctx.db.add(site)
     ctx.db.commit()
-    p.done()
+    p.done(status)
 
     # Construct the HTTP path
     p = Echo('Constructing paths and configuration files...')
@@ -171,7 +175,7 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
         p.done()
 
     # Extract IPS setup files
-    p = Echo('Extracting setup files...')
+    p = Echo('Extracting setup files to tmp...')
     tmpdir = tempfile.mkdtemp('ips')
     setup_zip = os.path.join(tmpdir, 'setup.zip')
     setup_dir = os.path.join(tmpdir, 'setup')
@@ -189,13 +193,26 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
 
         z.extractall(setup_dir)
         log.debug('Setup files extracted to: %s', setup_dir)
+        p.done()
+        p = MarkerProgressBar('Copying setup files...')
         setup_tmpdir = os.path.join(setup_dir, namelist[0])
-        for filename in os.listdir(setup_tmpdir):
-            shutil.move(os.path.join(setup_tmpdir, filename), os.path.join(site.root, filename))
+        for dirname, dirnames, filenames in os.walk(setup_tmpdir):
+            for filepath in dirnames:
+                site_path = os.path.join(site.root, dirname.replace(setup_tmpdir, ''), filepath)
+                if not os.path.exists(site_path):
+                    log.debug('Creating directory: %s', site_path)
+                    os.mkdir(site_path, 0o755)
+                    p.update()
 
-        log.info('Setup files moved to: %s', site.root)
+            for filepath in filenames:
+                tmp_path = os.path.join(dirname, filepath)
+                site_path = os.path.join(site.root, dirname.replace(setup_tmpdir, ''), filepath)
+                shutil.copy(tmp_path, site_path)
+                p.update()
+
+        log.info('Setup files copied to: %s', site.root)
     shutil.rmtree(tmpdir)
-    p.done()
+    p.finish()
 
     # Apply proper permissions
     p = Echo('Setting file permissions...')

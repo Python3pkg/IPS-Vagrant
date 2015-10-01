@@ -15,7 +15,6 @@ class ProgressBar(progressbar.ProgressBar):
     """
     def __init__(self, maxval=None, label=None, max_term_width=None, fd=sys.stderr):
         """
-        Initialize a new ProgressBar instance
         @param  maxval:         The maximum progress bar value
         @type   maxval:         str or None
         @param  label:          The progress label (or None to disable the label)
@@ -74,14 +73,16 @@ class Label(progressbar.Widget):
     """
     Static width dynamic progress label
     """
-    def __init__(self, label=None):
+    def __init__(self, label=None, pad_size=30):
         """
-        @param  label:  The starting label
-        @type   label:  str or None
+        @param  label:      The starting label
+        @type   label:      str or None
+        @type   pad_size:   int or None
         """
         self._formatted = ''
         self._label = label
         self.label = label
+        self.pad_size = pad_size
 
     def update(self, pbar):
         """
@@ -109,12 +110,12 @@ class Label(progressbar.Widget):
     def label(self, value):
         """
         Set the label and generate the formatted value
-        @type   value:  str
+        @type   value:      str
         """
         # Fixed width label formatting
-        value = value[:30]
+        value = value[:self.pad_size] if self.pad_size else value
         try:
-            padding = ' ' * (30 - len(value))
+            padding = ' ' * (30 - len(value)) if self.pad_size else ''
         except TypeError:
             padding = ''
 
@@ -132,6 +133,19 @@ class Percentage(progressbar.Widget):
             return Echo.OK
 
         return '%3d%%' % pbar.percentage()
+
+
+class MarkerProgressBar(ProgressBar):
+    """
+    ProgressBar marker (for when the end count requirement is not known)
+    """
+    def __init__(self, label):
+        """
+        @param  label:  The progress label
+        @type   label:  str
+        """
+        super(MarkerProgressBar, self).__init__(None, label, None)
+        self.widgets = [Label(self.label, None), progressbar.AnimatedMarker(markers='.oO@* ')]
 
 
 class Echo:
