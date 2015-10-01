@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='IPS Vagrant',
-    version='0.2.0',
+    version='0.3.0',
     description='A management utility for the (unofficial) Invision Power Suite Vagrant development box.',
     long_description='A management utility for the (unofficial) Invision Power Suite Vagrant development box.',
     author='Makoto Fujimoto',
@@ -10,7 +10,7 @@ setup(
     url='https://github.com/FujiMakoto/IPS-Vagrant',
     license='MIT',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: MIT License',
         'Environment :: Console',
         'Intended Audience :: Developers',
