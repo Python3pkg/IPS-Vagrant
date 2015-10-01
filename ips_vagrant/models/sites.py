@@ -52,6 +52,18 @@ class Domain(Base):
         return Session.query(Domain).all()
 
     @classmethod
+    def get(cls, dname):
+        """
+        Get the requested domain
+        @param  dname:  Domain name
+        @type   dname:  str
+        @rtype: Domain or None
+        """
+        Domain = cls
+        dname = dname.hostname if hasattr(dname, 'hostname') else dname.lower()
+        return Session.query(Domain).filter(Domain.name == dname).first()
+
+    @classmethod
     def get_or_create(cls, dname):
         """
         Get the requested domain, or create it if it doesn't exist already
