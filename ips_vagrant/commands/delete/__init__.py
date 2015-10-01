@@ -11,7 +11,7 @@ from ips_vagrant.models.sites import Domain, Site, Session
 @click.argument('site', default=False, metavar='<site>')
 @click.option('--delete-code/--preserve-code', 'delete_code', help='Deletes HTTP files (project code) with the site '
                                                                    'entry. (Default: Preserve)')
-@click.option('--no-safety-prompt', 'no_prompt', flag=True, help='Skip the safety confirmation prompt(s). '
+@click.option('--no-safety-prompt', 'no_prompt', is_flag=True, help='Skip the safety confirmation prompt(s). '
                                                                  'USE WITH CAUTION!')
 @pass_context
 def cli(ctx, dname, site, delete_code, no_prompt):
@@ -52,14 +52,14 @@ def delete_single(site, domain, delete_code=False, no_prompt=False):
     @type   no_prompt:      bool
     """
     click.secho('Deleting installation "{sn}" hosted on the domain {dn}'.format(sn=site.name, dn=domain.name),
-                fg='red', bold=True)
+                fg='yellow', bold=True)
     if not no_prompt:
         if delete_code:
             warn_text = click.style('WARNING! THIS WILL PERMANENTLY DELETE THIS SITE AND ALL OF ITS PROJECT CODE '
-                                    'FILES! THIS MEANS ALL DATA FILES, INCLUDING ANY CREATED CUSTOM APPLICATIONS '
+                                    'FILES!\nTHIS MEANS ALL DATA FILES, INCLUDING ANY CREATED CUSTOM APPLICATIONS '
                                     'AND PLUGINS WILL BE PERMANENTLY AND IRREVOCABLY ERASED', fg='red', bold=True)
             click.echo(warn_text)
-            prompt_text = click.style('In order to continue, please re-input the site name: ', fg='white', bold=True)
+            prompt_text = click.style('In order to continue, please re-input the site name', fg='white', bold=True)
             prompt = click.prompt(prompt_text)
 
             # If our prompt doesn't match, abort
@@ -69,7 +69,7 @@ def delete_single(site, domain, delete_code=False, no_prompt=False):
 
         else:
             prompt_text = click.style('Are you sure you want to delete this site entry? Your project files will '
-                                      'still be preserved.', fg='red', bold=True)
+                                      'still be preserved.', fg='white', bold=True)
             click.confirm(prompt_text, abort=True)
 
     Session.delete(site)
@@ -93,22 +93,22 @@ def delete_all(domain, delete_code=False, no_prompt=False):
     @type   no_prompt:      bool
     """
     click.secho('All of the following installations hosted on the domain {dn} will be deleted:'
-                .format(dn=domain.name), fg='red')
+                .format(dn=domain.name), fg='yellow', bold=True)
 
     sites = domain.sites
     for site in sites:
-        click.secho(site.name, fg='red', bold=True)
+        click.secho('{sn} ({v})'.format(sn=site.name, v=site.version), fg='red', bold=True)
     click.secho('------', fg='white', bold=True)
     click.echo()
 
     if not no_prompt:
         if delete_code:
             warn_text = click.style('WARNING! THIS WILL PERMANENTLY DELETE ALL OF THE ABOVE SITES AND ALL OF THEIR '
-                                    'PROJECT CODE FILES! THIS MEANS ALL DATA FILES, INCLUDING ANY CREATED CUSTOM '
+                                    'PROJECT CODE FILES!\nTHIS MEANS ALL DATA FILES, INCLUDING ANY CREATED CUSTOM '
                                     'APPLICATIONS AND PLUGINS, WILL BE PERMANENTLY AND IRREVOCABLY ERASED.',
                                     fg='red', bold=True)
             click.echo(warn_text)
-            prompt_text = click.style('In order to continue, please re-input the domain name: ', fg='white', bold=True)
+            prompt_text = click.style('In order to continue, please re-input the domain name', fg='white', bold=True)
             prompt = click.prompt(prompt_text)
 
             # If our prompt doesn't match, abort
@@ -118,13 +118,14 @@ def delete_all(domain, delete_code=False, no_prompt=False):
 
         else:
             prompt_text = click.style('Are you sure you want to delete this domain and all its associated sites? '
-                                      'Your project files will still be preserved.', fg='red', bold=True)
+                                      'Your project files will still be preserved.', fg='white', bold=True)
             click.confirm(prompt_text, abort=True)
 
     for site in sites:
         Session.delete(site)
         if delete_code:
             _remove_code(site)
+        click.secho('{sn} removed'.format(sn=site.name), fg='yellow', bold=True)
 
     Session.delete(domain)
     Session.commit()
