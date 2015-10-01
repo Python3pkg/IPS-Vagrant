@@ -1,9 +1,9 @@
 import os
 import shutil
 import click
+import subprocess
 from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.common import domain_parse
-from ips_vagrant.common.progress import MarkerProgressBar
 from ips_vagrant.models.sites import Domain, Site, Session
 
 
@@ -74,7 +74,7 @@ def delete_single(site, domain, delete_code=False, no_prompt=False):
                                       'still be preserved.', fg='white', bold=True)
             click.confirm(prompt_text, abort=True)
 
-    Session.delete(site)
+    site.delete()
 
     if delete_code:
         _remove_code(site)
@@ -85,6 +85,10 @@ def delete_single(site, domain, delete_code=False, no_prompt=False):
         Session.delete(domain)
 
     Session.commit()
+
+    # Restart Nginx
+    FNULL = open(os.devnull, 'w')
+    subprocess.check_call(['/etc/init.d/nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
 
 
 def delete_all(domain, delete_code=False, no_prompt=False):
@@ -131,6 +135,10 @@ def delete_all(domain, delete_code=False, no_prompt=False):
 
     Session.delete(domain)
     Session.commit()
+
+    # Restart Nginx
+    FNULL = open(os.devnull, 'w')
+    subprocess.check_call(['/etc/init.d/nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
 
 
 def _remove_code(site):

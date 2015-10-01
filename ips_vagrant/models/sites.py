@@ -160,6 +160,7 @@ class Site(Base):
         @param  drop_database:  Drop the sites associated MySQL database
         @type   drop_database:  bool
         """
+        self.disable()
         Session.delete(self)
 
         if drop_database:
@@ -248,12 +249,11 @@ class Site(Base):
         """
         log = logging.getLogger('ipsv.models.sites.site')
         sites_enabled_path = _cfg.get('Paths', 'NginxSitesEnabled')
-        server_config_path = os.path.join(_cfg.get('Paths', 'NginxSitesAvailable'), self.domain.name)
-        server_config_path = os.path.join(server_config_path, '{fn}.conf'.format(fn=self.slug))
-        symlink_path = os.path.join(sites_enabled_path, '{domain}-{fn}'.format(domain=self.domain.name,
-                                                                               fn=os.path.basename(server_config_path)))
+        symlink_path = os.path.join(sites_enabled_path, '{domain}-{fn}.conf'.format(domain=self.domain.name,
+                                                                                    fn=self.slug))
+        log.debug('Symlink path: %s', symlink_path)
         if os.path.islink(symlink_path):
-            log.debug('Removing configuration symlink: %s', symlink_path)
+            log.info('Removing configuration symlink: %s', symlink_path)
             os.unlink(symlink_path)
 
         self.enabled = 0

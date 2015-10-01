@@ -20,7 +20,8 @@ from ips_vagrant.downloaders import IpsManager
 
 @click.command('new', short_help='Creates a new IPS installation.')
 @click.option('-n', '--name', prompt='Installation nickname', help='Installation name.')
-@click.option('-d', '--domain', 'dname', prompt='Domain name', envvar='DOMAIN', help='Installation domain name.')
+@click.option('-d', '--domain', 'dname', default='localhost', prompt='Domain name', envvar='DOMAIN',
+              help='Installation domain name.')
 @click.option('-l', '--license', 'license_key', envvar='LICENSE', help='License key to use for requests.')
 @click.option('-v', '--version', 'ips_version', envvar='VERSION', help='Manually specify a version to install.')
 @click.option('-f', '--force', is_flag=True,
