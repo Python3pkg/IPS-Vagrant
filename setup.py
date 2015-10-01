@@ -36,6 +36,7 @@ setup(
             'ipsv = ips_vagrant.cli:cli'
         ]
     },
-    install_requires=['beautifulsoup4~=4.4.1', 'mechanize~=0.2.5', 'click~=5.1', 'requests~=2.2.1', 'jinja2~=2.8',
-                      'alembic~=0.8.2', 'progressbar~=2.3', 'pyOpenSSL~=0.13', 'sqlalchemy~=1.0.8']
+    install_requires=['beautifulsoup4>=4.4.1,<4.5', 'mechanize>=0.2.5,<0.3', 'click>=5.1,<5.2', 'requests>=2.2.1,<2.3',
+                      'jinja2>=2.8,<2.9', 'alembic>=0.8.2,<0.9', 'progressbar>=2.3,<2.4', 'pyOpenSSL>=0.13,<1.0',
+                      'sqlalchemy>=1.0.8,<1.1']
 )
