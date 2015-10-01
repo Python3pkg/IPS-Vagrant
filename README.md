@@ -247,6 +247,28 @@ Options:
   --help  Show this message and exit.
 ```
 
+### Deleting installations
+To completely remove a site or domain from ipsv's database, you can use the delete command.
+```
+Usage: ipsv delete [OPTIONS] <domain> <site>
+
+  Deletes a single site if both <domain> and <site> are specified, or ALL sites
+  under a domain if only the <domain> is specified.
+
+Options:
+  --remove-code / --preserve-code
+                                  Deletes project code (HTTP files) with the site
+                                  entry. (Default: Preserve)
+  --no-safety-prompt              Skip the safety confirmation prompt(s). USE
+                                  WITH CAUTION!
+  --help                          Show this message and exit.
+```
+When both a domain and site name are provided, the command will delete a single installation.
+
+When only a domain is provided, the command will delete all installations under the specified domain.
+
+By default, the delete command will retain project code files. When the **--remove-code** option is provided, the script will delete all HTTP files with the site entry. You will be required to re-input the site/domain name when utilizing this option as an additional safety measure.
+
 ## License
 ```
 The MIT License (MIT)
