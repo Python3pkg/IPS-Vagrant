@@ -267,7 +267,7 @@ When both a domain and site name are provided, the command will delete a single 
 
 When only a domain is provided, the command will delete all installations under the specified domain.
 
-By default, the delete command will retain project code files. When the **--delete-code** option is provided, the script will delete all HTTP files with the site entry. You will be required to re-input the site/domain name when utilizing this option as an additional safety measure.
+By default, the delete command will retain project code files. When the **--remove-code** option is provided, the script will delete all HTTP files with the site entry. You will be required to re-input the site/domain name when utilizing this option as an additional safety measure.
 
 ## License
 ```
