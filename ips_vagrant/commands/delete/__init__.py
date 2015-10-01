@@ -10,10 +10,10 @@ from ips_vagrant.models.sites import Domain, Site, Session
 @click.command('list', short_help='Delete a single site or ALL sites under a domain.')
 @click.argument('dname', metavar='<domain>')
 @click.argument('site', default=False, metavar='<site>')
-@click.option('--delete-code/--preserve-code', 'delete_code', help='Deletes HTTP files (project code) with the site '
+@click.option('--remove-code/--preserve-code', 'delete_code', help='Deletes project code (HTTP files) with the site '
                                                                    'entry. (Default: Preserve)')
 @click.option('--no-safety-prompt', 'no_prompt', is_flag=True, help='Skip the safety confirmation prompt(s). '
-                                                                 'USE WITH CAUTION!')
+                                                                    'USE WITH CAUTION!')
 @pass_context
 def cli(ctx, dname, site, delete_code, no_prompt):
     """
@@ -85,6 +85,7 @@ def delete_single(site, domain, delete_code=False, no_prompt=False):
         Session.delete(domain)
 
     Session.commit()
+    click.secho('{sn} removed'.format(sn=site.name), fg='yellow', bold=True)
 
     # Restart Nginx
     FNULL = open(os.devnull, 'w')
