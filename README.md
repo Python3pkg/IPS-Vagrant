@@ -63,7 +63,7 @@ Commands:
   new       Creates a new IPS installation.
   setup     Run setup after a fresh Vagrant installation.
   versions  Displays available IPS and resource versions.
-  ```
+```
   
 ### Setting up a new installation
 The **new** command is used to create installations.
