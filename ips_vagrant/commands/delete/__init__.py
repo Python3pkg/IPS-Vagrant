@@ -3,6 +3,7 @@ import shutil
 import click
 from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.common import domain_parse
+from ips_vagrant.common.progress import MarkerProgressBar
 from ips_vagrant.models.sites import Domain, Site, Session
 
 
@@ -55,9 +56,10 @@ def delete_single(site, domain, delete_code=False, no_prompt=False):
                 fg='yellow', bold=True)
     if not no_prompt:
         if delete_code:
-            warn_text = click.style('WARNING! THIS WILL PERMANENTLY DELETE THIS SITE AND ALL OF ITS PROJECT CODE '
-                                    'FILES!\nTHIS MEANS ALL DATA FILES, INCLUDING ANY CREATED CUSTOM APPLICATIONS '
-                                    'AND PLUGINS WILL BE PERMANENTLY AND IRREVOCABLY ERASED', fg='red', bold=True)
+            warn_text = click.style('WARNING! THIS WILL PERMANENTLY DELETE THIS SITE AND ALL OF THE ASSOCIATED '
+                                    'PROJECT CODE FILES!\nTHIS MEANS ALL DATA FILES, INCLUDING ANY CREATED CUSTOM '
+                                    'APPLICATIONS AND PLUGINS WILL BE PERMANENTLY AND IRREVOCABLY ERASED!',
+                                    fg='red', bold=True)
             click.echo(warn_text)
             prompt_text = click.style('In order to continue, please re-input the site name', fg='white', bold=True)
             prompt = click.prompt(prompt_text)
@@ -105,7 +107,7 @@ def delete_all(domain, delete_code=False, no_prompt=False):
         if delete_code:
             warn_text = click.style('WARNING! THIS WILL PERMANENTLY DELETE ALL OF THE ABOVE SITES AND ALL OF THEIR '
                                     'PROJECT CODE FILES!\nTHIS MEANS ALL DATA FILES, INCLUDING ANY CREATED CUSTOM '
-                                    'APPLICATIONS AND PLUGINS, WILL BE PERMANENTLY AND IRREVOCABLY ERASED.',
+                                    'APPLICATIONS AND PLUGINS, WILL BE PERMANENTLY AND IRREVOCABLY ERASED!',
                                     fg='red', bold=True)
             click.echo(warn_text)
             prompt_text = click.style('In order to continue, please re-input the domain name', fg='white', bold=True)
