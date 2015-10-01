@@ -153,6 +153,19 @@ class Site(Base):
         Site = cls
         return Session.query(Site).filter(Site.domain == domain).filter(collate(Site.name, 'NOCASE') == name).first()
 
+    def delete(self, drop_database=True):
+        """
+        Delete the site entry
+        @param  drop_database:  Drop the sites associated MySQL database
+        @type   drop_database:  bool
+        """
+        Session.delete(self)
+
+        if drop_database:
+            mysql = create_engine('mysql://root:secret@localhost')
+            mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=self.db_name))
+            mysql.execute('DROP USER IF EXISTS `{u}`'.format(u=self.db_user))
+
     @hybrid_property
     def name(self):
         """

@@ -114,13 +114,25 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
     p = Echo('Constructing site data...')
     site = ctx.db.query(Site).filter(Site.domain == domain).filter(collate(Site.name, 'NOCASE') == name).count()
     if site:
+        p.done(p.FAIL)
         log.error('Site already exists')
-        raise Exception('An installation named "{s}" has already been created for the domain {d}'
-                        .format(s=name, d=dname))
+        click.secho('An installation named "{s}" has already been created for the domain {d}'.format(s=name, d=dname),
+                    err=True, fg='red', bold=True)
+        raise click.Abort
 
     # Create the site database entry
     site = Site(name=name, domain=domain, license_key=lmeta.license_key, version=v.version.vstring, ssl=ssl, spdy=spdy,
                 gzip=gzip, enabled=enable, in_dev=dev)
+
+    if os.path.exists(site.root):
+        if not force:
+            click.secho("Installation path already exists and --force was not passed:\n{p}".format(p=site.root),
+                        err=True, fg='red', bold=True)
+            log.info('Aborting installation, path already exists: {p}'.format(p=site.root))
+            raise click.Abort
+
+        log.warn('Overwriting existing installation path: {p}'.format(p=site.root))
+
     ctx.db.add(site)
     ctx.db.commit()
     p.done()
@@ -206,7 +218,7 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
     # Run the installation
     if install:
         p = Echo('Initializing installer...')
-        i = installer(v.version, ctx, site)
+        i = installer(v.version, ctx, site, force)
         p.done()
         i.start()
     else:
