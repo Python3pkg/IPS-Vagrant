@@ -252,14 +252,15 @@ To completely remove a site or domain from ipsv's database, you can use the dele
 ```
 Usage: ipsv delete [OPTIONS] <domain> <site>
 
-  Deletes a single site if both <domain> and <site> are specified, or ALL sites under a domain
-  if only the <domain> is specified.
+  Deletes a single site if both <domain> and <site> are specified, or ALL sites
+  under a domain if only the <domain> is specified.
 
 Options:
-  --delete-code / --preserve-code
-                                  Deletes HTTP files (project code) with the site entry. (Default:
-                                  Preserve)
-  --no-safety-prompt              Skip the safety confirmation prompt(s). USE WITH CAUTION!
+  --remove-code / --preserve-code
+                                  Deletes project code (HTTP files) with the site
+                                  entry. (Default: Preserve)
+  --no-safety-prompt              Skip the safety confirmation prompt(s). USE
+                                  WITH CAUTION!
   --help                          Show this message and exit.
 ```
 When both a domain and site name are provided, the command will delete a single installation.
