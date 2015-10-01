@@ -4,6 +4,7 @@ import os
 import re
 import logging
 import shutil
+from sqlalchemy.exc import SQLAlchemyError
 import ips_vagrant
 from ConfigParser import ConfigParser
 from sqlalchemy import create_engine, collate
@@ -164,7 +165,10 @@ class Site(Base):
         if drop_database:
             mysql = create_engine('mysql://root:secret@localhost')
             mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=self.db_name))
-            mysql.execute('DROP USER IF EXISTS `{u}`'.format(u=self.db_user))
+            try:
+                mysql.execute('DROP USER `{u}`'.format(u=self.db_user))
+            except SQLAlchemyError:
+                pass
 
     @hybrid_property
     def name(self):
