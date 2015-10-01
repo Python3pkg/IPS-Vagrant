@@ -172,7 +172,7 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
         # Restart Nginx
         p = Echo('Restarting web server...')
         FNULL = open(os.devnull, 'w')
-        subprocess.check_call(['/etc/init.d/nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
+        subprocess.check_call(['service', 'nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
         p.done()
 
     # Extract IPS setup files

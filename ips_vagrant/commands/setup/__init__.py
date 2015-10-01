@@ -80,6 +80,19 @@ def cli(ctx):
     cache.commit()
     p.done()
 
+    # Disable the default server block
+    p = Echo('Configuring Nginx...')
+    default_block = os.path.join(ctx.config.get('Paths', 'NginxSitesAvailable'), 'default')
+    if os.path.isfile(default_block):
+        os.remove(default_block)
+    p.done()
+
+    # Restart Nginx
+    FNULL = open(os.devnull, 'w')
+    p = Echo('Restarting Nginx...')
+    subprocess.check_call(['service', 'nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
+    p.done()
+
     # php5-fpm configuration
     p = Echo('Configuring php5-fpm...')
     if os.path.isfile('/etc/php5/fpm/pool.d/www.conf'):
@@ -92,7 +105,6 @@ def cli(ctx):
 
     # Restart php5-fpm
     p = Echo('Restarting php5-fpm...')
-    FNULL = open(os.devnull, 'w')
     subprocess.check_call(['service', 'php5-fpm', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
     p.done()
 

@@ -74,7 +74,8 @@ class Domain(Base):
         """
         Domain = cls
         dname = dname.hostname if hasattr(dname, 'hostname') else dname
-        extras = 'www.{dn}'.format(dn=dname)
+        extras = 'www.{dn}'.format(dn=dname) if dname not in ('localhost', ) and not \
+            re.match('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', dname) else None
         # Fetch the domain entry if it already exists
         logging.getLogger('ipsv.sites.domain').debug('Checking if the domain %s has already been registered', dname)
         domain = Session.query(Domain).filter(Domain.name == dname).first()
@@ -163,7 +164,7 @@ class Site(Base):
         self.disable()
         Session.delete(self)
 
-        if drop_database:
+        if drop_database and self.db_name:
             mysql = create_engine('mysql://root:secret@localhost')
             mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=self.db_name))
             try:
