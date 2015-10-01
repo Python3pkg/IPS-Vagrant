@@ -4,6 +4,7 @@ import os
 import re
 import logging
 import shutil
+from sqlalchemy.exc import SQLAlchemyError
 import ips_vagrant
 from ConfigParser import ConfigParser
 from sqlalchemy import create_engine, collate
@@ -52,6 +53,18 @@ class Domain(Base):
         return Session.query(Domain).all()
 
     @classmethod
+    def get(cls, dname):
+        """
+        Get the requested domain
+        @param  dname:  Domain name
+        @type   dname:  str
+        @rtype: Domain or None
+        """
+        Domain = cls
+        dname = dname.hostname if hasattr(dname, 'hostname') else dname.lower()
+        return Session.query(Domain).filter(Domain.name == dname).first()
+
+    @classmethod
     def get_or_create(cls, dname):
         """
         Get the requested domain, or create it if it doesn't exist already
@@ -61,7 +74,8 @@ class Domain(Base):
         """
         Domain = cls
         dname = dname.hostname if hasattr(dname, 'hostname') else dname
-        extras = 'www.{dn}'.format(dn=dname)
+        extras = 'www.{dn}'.format(dn=dname) if dname not in ('localhost', ) and not \
+            re.match('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', dname) else None
         # Fetch the domain entry if it already exists
         logging.getLogger('ipsv.sites.domain').debug('Checking if the domain %s has already been registered', dname)
         domain = Session.query(Domain).filter(Domain.name == dname).first()
@@ -141,6 +155,23 @@ class Site(Base):
         Site = cls
         return Session.query(Site).filter(Site.domain == domain).filter(collate(Site.name, 'NOCASE') == name).first()
 
+    def delete(self, drop_database=True):
+        """
+        Delete the site entry
+        @param  drop_database:  Drop the sites associated MySQL database
+        @type   drop_database:  bool
+        """
+        self.disable()
+        Session.delete(self)
+
+        if drop_database and self.db_name:
+            mysql = create_engine('mysql://root:secret@localhost')
+            mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=self.db_name))
+            try:
+                mysql.execute('DROP USER `{u}`'.format(u=self.db_user))
+            except SQLAlchemyError:
+                pass
+
     @hybrid_property
     def name(self):
         """
@@ -219,12 +250,11 @@ class Site(Base):
         """
         log = logging.getLogger('ipsv.models.sites.site')
         sites_enabled_path = _cfg.get('Paths', 'NginxSitesEnabled')
-        server_config_path = os.path.join(_cfg.get('Paths', 'NginxSitesAvailable'), self.domain.name)
-        server_config_path = os.path.join(server_config_path, '{fn}.conf'.format(fn=self.slug))
-        symlink_path = os.path.join(sites_enabled_path, '{domain}-{fn}'.format(domain=self.domain.name,
-                                                                               fn=os.path.basename(server_config_path)))
+        symlink_path = os.path.join(sites_enabled_path, '{domain}-{fn}.conf'.format(domain=self.domain.name,
+                                                                                    fn=self.slug))
+        log.debug('Symlink path: %s', symlink_path)
         if os.path.islink(symlink_path):
-            log.debug('Removing configuration symlink: %s', symlink_path)
+            log.info('Removing configuration symlink: %s', symlink_path)
             os.unlink(symlink_path)
 
         self.enabled = 0

@@ -1,3 +1,4 @@
+# coding=utf-8
 import os
 import sys
 import termios
@@ -6,7 +7,7 @@ import progressbar
 from array import array
 from fcntl import ioctl
 
-_DEFAULT_MAXTERMSIZE = 100
+_DEFAULT_MAXTERMSIZE = 80
 
 
 class ProgressBar(progressbar.ProgressBar):
@@ -15,7 +16,6 @@ class ProgressBar(progressbar.ProgressBar):
     """
     def __init__(self, maxval=None, label=None, max_term_width=None, fd=sys.stderr):
         """
-        Initialize a new ProgressBar instance
         @param  maxval:         The maximum progress bar value
         @type   maxval:         str or None
         @param  label:          The progress label (or None to disable the label)
@@ -74,13 +74,15 @@ class Label(progressbar.Widget):
     """
     Static width dynamic progress label
     """
-    def __init__(self, label=None):
+    def __init__(self, label=None, pad_size=30):
         """
-        @param  label:  The starting label
-        @type   label:  str or None
+        @param  label:      The starting label
+        @type   label:      str or None
+        @type   pad_size:   int or None
         """
         self._formatted = ''
         self._label = label
+        self.pad_size = pad_size
         self.label = label
 
     def update(self, pbar):
@@ -109,12 +111,12 @@ class Label(progressbar.Widget):
     def label(self, value):
         """
         Set the label and generate the formatted value
-        @type   value:  str
+        @type   value:      str
         """
         # Fixed width label formatting
-        value = value[:30]
+        value = value[:self.pad_size] if self.pad_size else value
         try:
-            padding = ' ' * (30 - len(value))
+            padding = ' ' * (self.pad_size - len(value)) if self.pad_size else ''
         except TypeError:
             padding = ''
 
@@ -132,6 +134,31 @@ class Percentage(progressbar.Widget):
             return Echo.OK
 
         return '%3d%%' % pbar.percentage()
+
+
+class MarkerProgressBar(ProgressBar):
+    """
+    ProgressBar marker (for when the end count requirement is not known)
+    """
+    def __init__(self, label, nl=True):
+        """
+        @param  label:  The progress label
+        @type   label:  str
+        @param  nl:     Automatically generate a success message with a newline on finish
+        @type   nl:     bool
+        """
+        super(MarkerProgressBar, self).__init__(None, label, None)
+        self.nl = nl
+        # self.widgets = [Label(self.label, None), progressbar.AnimatedMarker(markers='.oO@* ')]
+        self.widgets = [Label(self.label, None), progressbar.AnimatedMarker(markers='←↖↑↗→↘↓↙'.decode('utf8'))]
+
+    def finish(self):
+        """
+        Update widgets on finish
+        """
+        os.system('setterm -cursor on')
+        if self.nl:
+            Echo(self.label).done()
 
 
 class Echo:
@@ -161,7 +188,7 @@ class Echo:
         """
         @type   status: str
         """
-        padding = ' ' * (94 - len(self.message))
+        padding = ' ' * ((self.max_term_width - 6) - len(self.message))
         suffix = click.style(']', fg=self.color, bold=self.bold)
         message = '{msg}{pad}[{status}{suf}'.format(msg=self.message, pad=padding, status=status, suf=suffix)
         stdout = click.get_text_stream('stdout')

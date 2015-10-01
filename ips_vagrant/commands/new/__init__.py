@@ -7,7 +7,7 @@ import zipfile
 import tempfile
 import subprocess
 from sqlalchemy.sql import collate
-from ips_vagrant.common.progress import Echo
+from ips_vagrant.common.progress import Echo, MarkerProgressBar
 from ips_vagrant.common.version import Version
 from ips_vagrant.models.sites import Domain, Site
 from ips_vagrant.cli import pass_context, Context
@@ -20,7 +20,8 @@ from ips_vagrant.downloaders import IpsManager
 
 @click.command('new', short_help='Creates a new IPS installation.')
 @click.option('-n', '--name', prompt='Installation nickname', help='Installation name.')
-@click.option('-d', '--domain', 'dname', prompt='Domain name', envvar='DOMAIN', help='Installation domain name.')
+@click.option('-d', '--domain', 'dname', default='localhost', prompt='Domain name', envvar='DOMAIN',
+              help='Installation domain name.')
 @click.option('-l', '--license', 'license_key', envvar='LICENSE', help='License key to use for requests.')
 @click.option('-v', '--version', 'ips_version', envvar='VERSION', help='Manually specify a version to install.')
 @click.option('-f', '--force', is_flag=True,
@@ -85,12 +86,19 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
     ips = IpsManager(ctx, lmeta)
     p.done()
     if ips_version:
-        ips_version = Version(ips_version)
-        v = ips.versions[ips_version.vtuple]
-        p = Echo('Fetching IPS version {iv}'.format(iv=ips_version.vstring))
+        if ips_version == 'latest_dev':
+            v = ips.dev_version
+            if not v:
+                click.secho('There is no IPS development release available for download', err=True, fg='red', bold=True)
+                raise Exception('There is no IPS development release available for download')
+            p = Echo('Downloading IPS development release {vs}...'.format(vs=v.version.vstring))
+        else:
+            ips_version = Version(ips_version)
+            v = ips.versions[ips_version.vtuple]
+            p = Echo('Fetching IPS version {iv}'.format(iv=ips_version.vstring))
     else:
-        p = Echo('Downloading the most recent IPS release...')
         v = ips.latest
+        p = Echo('Downloading IPS release {vs}...'.format(vs=v.version.vstring))
     filename = ips.get(v, cache)
     p.done()
 
@@ -107,16 +115,32 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
     p = Echo('Constructing site data...')
     site = ctx.db.query(Site).filter(Site.domain == domain).filter(collate(Site.name, 'NOCASE') == name).count()
     if site:
+        p.done(p.FAIL)
         log.error('Site already exists')
-        raise Exception('An installation named "{s}" has already been created for the domain {d}'
-                        .format(s=name, d=dname))
+        click.secho('An installation named "{s}" has already been created for the domain {d}'
+                    .format(s=name, d=dname.hostname),
+                    err=True, fg='red', bold=True)
+        raise click.Abort
 
     # Create the site database entry
     site = Site(name=name, domain=domain, license_key=lmeta.license_key, version=v.version.vstring, ssl=ssl, spdy=spdy,
                 gzip=gzip, enabled=enable, in_dev=dev)
+
+    status = p.OK
+    if os.path.exists(site.root):
+        if not force:
+            p.done(p.FAIL)
+            click.secho("Installation path already exists and --force was not passed:\n{p}".format(p=site.root),
+                        err=True, fg='red', bold=True)
+            log.info('Aborting installation, path already exists: {p}'.format(p=site.root))
+            raise click.Abort
+
+        log.warn('Overwriting existing installation path: {p}'.format(p=site.root))
+        status = p.WARN
+
     ctx.db.add(site)
     ctx.db.commit()
-    p.done()
+    p.done(status)
 
     # Construct the HTTP path
     p = Echo('Constructing paths and configuration files...')
@@ -148,11 +172,11 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
         # Restart Nginx
         p = Echo('Restarting web server...')
         FNULL = open(os.devnull, 'w')
-        subprocess.check_call(['/etc/init.d/nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
+        subprocess.check_call(['service', 'nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
         p.done()
 
     # Extract IPS setup files
-    p = Echo('Extracting setup files...')
+    p = Echo('Extracting setup files to tmp...')
     tmpdir = tempfile.mkdtemp('ips')
     setup_zip = os.path.join(tmpdir, 'setup.zip')
     setup_dir = os.path.join(tmpdir, 'setup')
@@ -170,36 +194,47 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
 
         z.extractall(setup_dir)
         log.debug('Setup files extracted to: %s', setup_dir)
+        p.done()
+        p = MarkerProgressBar('Copying setup files...')
         setup_tmpdir = os.path.join(setup_dir, namelist[0])
-        for filename in os.listdir(setup_tmpdir):
-            shutil.move(os.path.join(setup_tmpdir, filename), os.path.join(site.root, filename))
+        for dirname, dirnames, filenames in p(os.walk(setup_tmpdir)):
+            for filepath in dirnames:
+                site_path = os.path.join(site.root, dirname.replace(setup_tmpdir, ''), filepath)
+                if not os.path.exists(site_path):
+                    log.debug('Creating directory: %s', site_path)
+                    os.mkdir(site_path, 0o755)
 
-        log.info('Setup files moved to: %s', site.root)
+            for filepath in filenames:
+                tmp_path = os.path.join(dirname, filepath)
+                site_path = os.path.join(site.root, dirname.replace(setup_tmpdir, ''), filepath)
+                shutil.copy(tmp_path, site_path)
+
+        log.info('Setup files copied to: %s', site.root)
     shutil.rmtree(tmpdir)
-    p.done()
 
     # Apply proper permissions
-    p = Echo('Setting file permissions...')
+    # p = MarkerProgressBar('Setting file permissions...')
     writeable_dirs = ['uploads', 'plugins', 'applications', 'datastore']
     
     for wdir in writeable_dirs:
         log.debug('Setting file permissions in %s', wdir)
         os.chmod(os.path.join(site.root, wdir), 0o777)
-        for dirname, dirnames, filenames in os.walk(os.path.join(site.root, wdir)):
+        p = MarkerProgressBar('Setting file permissions...', nl=False)
+        for dirname, dirnames, filenames in p(os.walk(os.path.join(site.root, wdir))):
             for filename in filenames:
                 os.chmod(os.path.join(dirname, filename), 0o666)
 
             for filename in dirnames:
                 os.chmod(os.path.join(dirname, filename), 0o777)
+    Echo('Setting file permissions...').done()
 
     shutil.move(os.path.join(site.root, 'conf_global.dist.php'), os.path.join(site.root, 'conf_global.php'))
     os.chmod(os.path.join(site.root, 'conf_global.php'), 0o777)
-    p.done()
 
     # Run the installation
     if install:
         p = Echo('Initializing installer...')
-        i = installer(v.version, ctx, site)
+        i = installer(v.version, ctx, site, force)
         p.done()
         i.start()
     else:

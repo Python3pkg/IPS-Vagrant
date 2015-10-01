@@ -10,6 +10,7 @@ from urlparse import urlparse, urlunparse, parse_qs
 from bs4 import BeautifulSoup
 from mechanize import Browser
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from ips_vagrant.common import cookiejar, byteify
 from ips_vagrant.common.progress import ProgressBar, Echo
 from ips_vagrant.installer.dev_tools.latest import DevToolsInstaller
@@ -35,15 +36,18 @@ class Installer(object):
     FIELD_ADMIN_PASS_CONFIRM = 'admin_pass2'
     FIELD_ADMIN_EMAIL = 'admin_email'
 
-    def __init__(self, ctx, site):
+    def __init__(self, ctx, site, force=False):
         """
         Initialize a new Installer instance
         @type   ctx:    ips_vagrant.cli.Context
         @param  site:   The IPS Site we are installing
         @type   site:   ips_vagrant.models.sites.Site
+        @param  force:  Overwrite existing files / databases
+        @type   force:  bool
         """
         self.log = logging.getLogger('ipsv.installer')
         self.ctx = ctx
+        self.force = force
         self._previous_title = None
         self.url = '{scheme}://{host}/admin/install'.format(
             scheme='https' if site.ssl else 'http', host=site.domain.name
@@ -155,8 +159,19 @@ class Installer(object):
         rand_pass = ''.join(random.SystemRandom()
                             .choice(string.ascii_letters + string.digits) for _ in range(random.randint(16, 24)))
         db_pass = rand_pass
-        # self.mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=db_name))  # Returns a warning from sqlalchemy
-        self.mysql.execute('CREATE DATABASE `{db}`'.format(db=db_name))
+
+        try:
+            self.mysql.execute('CREATE DATABASE `{db}`'.format(db=db_name))
+        except SQLAlchemyError:
+            if not self.force:
+                click.confirm('A previous database for this installation already exists.\n'
+                              'Would you like to drop it now? The installation will be aborted if you do not',
+                              abort=True)
+            self.log.info('Dropping existing database: {db}'.format(db=db_name))
+            self.mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=db_name))
+            self.mysql.execute('DROP USER IF EXISTS `{u}`'.format(u=db_user))
+            self.mysql.execute('CREATE DATABASE `{db}`'.format(db=db_name))
+
         self.mysql.execute("GRANT ALL ON {db}.* TO '{u}'@'localhost' IDENTIFIED BY '{p}'"
                            .format(db=db_name, u=db_user, p=db_pass))
 

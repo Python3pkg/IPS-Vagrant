@@ -14,11 +14,16 @@ for modname in _modnames:
 versions = OrderedDict(sorted(versions.items(), key=lambda v: v[0]))
 
 
-def installer(cv, ctx, site):
+def installer(cv, ctx, site, force=False):
     """
     Installer factory
-    @param  cv: Current version (The version of IPS we are installing)
-    @type   cv: ips_vagrant.common.version.Version
+    @param  cv:     Current version (The version of IPS we are installing)
+    @type   cv:     ips_vagrant.common.version.Version
+    @type   ctx:    ips_vagrant.cli.Context
+    @param  site:   The IPS Site we are installing
+    @type   site:   ips_vagrant.models.sites.Site
+    @param  force:  Overwrite existing files / databases
+    @type   force:  bool
     @return:    Installer instance
     @rtype:     ips_vagrant.installer.latest.Installer
     """
@@ -34,4 +39,4 @@ def installer(cv, ctx, site):
             iv = v
 
     log.info('Returning installer version %s', '.'.join(map(str, iv)) if iv else 'latest')
-    return versions[iv](ctx, site)
+    return versions[iv](ctx, site, force)
