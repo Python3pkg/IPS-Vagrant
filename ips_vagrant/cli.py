@@ -62,8 +62,8 @@ class Context(object):
             return self.cookiejar
 
         # Prompt the user for their login credentials
-        username = click.prompt('Username')
-        password = click.prompt('Password', hide_input=True)
+        username = click.prompt('IPS Username')
+        password = click.prompt('IPS Password', hide_input=True)
         remember = click.confirm('Save login session?', True)
 
         # Process the login
