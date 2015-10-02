@@ -7,8 +7,8 @@ def readme():
 
 
 setup(
-    name='IPS Vagrant',
-    version='0.3.0',
+    name='IPS-Vagrant',
+    version='0.3.1',
     description='A management utility for the (unofficial) Invision Power Suite Vagrant development box.',
     long_description=readme(),
     author='Makoto Fujimoto',
@@ -30,7 +30,8 @@ setup(
     ],
     packages=find_packages(),
     package_data={'ips_vagrant': ['config/*.conf', 'generators/templates/nginx/*.tpl',
-                                  'generators/templates/php5-fpm/*.tpl', 'alembic.ini', 'README.rst']},
+                                  'generators/templates/php5-fpm/*.tpl', 'alembic.ini', 'WELCOME.rst', 'man/*',
+                                  'README.rst']},
     entry_points={
         'console_scripts': [
             'ipsv = ips_vagrant.cli:cli'

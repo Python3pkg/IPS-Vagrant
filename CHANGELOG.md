@@ -2,6 +2,24 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+
+## [0.3.0] - 2015-10-01
+### Added
+- A fantastic spinning arrow
+- Support for IPS 4.1 development builds with --version="latest_dev"
+- delete command
+- ProgressBar padding was fixed width where it should be dynamically adjusted
+
+### Changed
+- --force flag now actually serves its purpose properly
+- www aliases will not be automatically generated for localhost and IP address domains
+- Remove default Nginx server block on setup
+- Replace init.d subprocess calls with service calls
+
+### Fixed
+- setup.py should be using install_requires, not requires
+
+
 ## [0.2.0] - 2015-09-29
 ### Added
 - list command
