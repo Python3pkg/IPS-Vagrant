@@ -7,6 +7,7 @@ import logging
 import subprocess
 from alembic import command
 from alembic.config import Config
+import sys
 from ips_vagrant.common.progress import Echo
 from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.generators.php5_fpm import FpmPoolConfig
@@ -120,7 +121,7 @@ def cli(ctx):
     if not os.path.exists(sys_man_path):
         os.makedirs(sys_man_path)
 
-    shutil.copyfile(man_path, sys_man_path)
+    shutil.copyfile(man_path, os.path.join(sys_man_path, 'ipsv.1'))
 
     subprocess.check_call(['mandb'], stdout=FNULL, stderr=subprocess.STDOUT)
 
@@ -136,7 +137,6 @@ def cli(ctx):
             # Footer match (Stop removing)
             if wm_remove:
                 wm_remove = False
-                print line
                 continue
 
             # Header match (Start removing)
@@ -148,7 +148,7 @@ def cli(ctx):
             continue
 
         # Print line and continue as normal
-        print line
+        sys.stdout.write(line)
 
     # Write new profile data
     with open('/etc/profile', 'a') as f:
