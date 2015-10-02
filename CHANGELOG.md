@@ -3,6 +3,19 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [0.3.1] - 2015-10-01
+### Added
+- Generate a welcome message to be displayed on first login after setup
+- ipsv man page
+- Windows Vagrant script and portable putty executable added to release binaries
+
+### Changed
+- Clarified the IPS username / password prompts (Renamed to IPS Username/Password)
+
+### Fixed
+- Unlink Nginx default configuration in sites-enabled on setup
+
+
 ## [0.3.0] - 2015-10-01
 ### Added
 - A fantastic spinning arrow
