@@ -152,13 +152,13 @@ def cli(ctx):
 
     # Write new profile data
     with open('/etc/profile', 'a') as f:
-        f.write(wm_header)
+        f.write("\n" + wm_header + "\n")
         fl_lock_path = os.path.join(ctx.config.get('Paths', 'Data'), 'first_login.lck')
-        f.write('if [ ! -f "{lp}" ]; then'.format(lp=fl_lock_path))
-        f.write('  less "{wp}"'.format(wp=os.path.join(ctx.basedir, 'WELCOME.rst')))
-        f.write('  sudo touch "{lp}"'.format(lp=fl_lock_path))
-        f.write('fi')
-        f.write(wm_header)
+        f.write('if [ ! -f "{lp}" ]; then'.format(lp=fl_lock_path) + "\n")
+        f.write('  less "{wp}"'.format(wp=os.path.join(ctx.basedir, 'WELCOME.rst')) + "\n")
+        f.write('  sudo touch "{lp}"'.format(lp=fl_lock_path) + "\n")
+        f.write('fi' + "\n")
+        f.write(wm_header + "\n")
     p.done()
 
     log.debug('Writing setup lock file')
