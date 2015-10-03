@@ -29,7 +29,8 @@ class DownloadManager(object):
         self.meta_name = self.meta_class.__name__
 
         self.path = os.path.join(self.ctx.config.get('Paths', 'Data'), 'versions')
-        self.dev_path = NotImplemented
+        self.dev_path = None
+        self.dev_version = None
         self.versions = OrderedDict()
 
     def _setup(self):
@@ -60,6 +61,22 @@ class DownloadManager(object):
                 self.versions[version.vtuple] = self.meta_class(self, version, filepath=archive)
             except BadZipfile as e:
                 self.log.warn('Unreadable zip archive in versions directory (%s): %s', e.message, archive)
+
+        if self.dev_path:
+            dev_archives = glob(os.path.join(self.dev_path, '*.zip'))
+            dev_versions = []
+            for dev_archive in dev_archives:
+                try:
+                    dev_versions.append((self._read_zip(dev_archive), dev_archive))
+                except BadZipfile as e:
+                    self.log.warn('Unreadable zip archive in versions directory (%s): %s', e.message, dev_archive)
+
+            if not dev_versions:
+                self.log.debug('No development releases found')
+                return
+
+            dev_version = sorted(dev_versions, key=lambda v: v[0].vtuple).pop()
+            self.dev_version = self.meta_class(self, dev_version[0], filepath=dev_version[1])
 
     @abstractmethod
     def _populate_latest(self):
