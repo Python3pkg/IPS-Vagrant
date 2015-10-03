@@ -38,7 +38,8 @@ class DevToolsManager(DownloadManager):
         @return:
         """
         # Get a map of version ID's from our most recent IPS version
-        ips = IpsManager(self.ctx).latest
+        ips = IpsManager(self.ctx)
+        ips = ips.dev_version or ips.latest
         with ZipFile(ips.filepath) as zip:
             namelist = zip.namelist()
 

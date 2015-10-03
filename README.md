@@ -34,13 +34,18 @@ https://github.com/FujiMakoto/IPS-Vagrant/releases
 
 This is the directory where all of your HTTP files and projects will be saved by default.
 
-After the files have been extracted, open up your terminal (or PowerShell if you're on Windows) and navigate to the directory where you extracted the Vagrant files, then run the command **vagrant up**.
+After the files have been extracted, open up your terminal (or PowerShell if you're on Windows) and navigate to the directory where you extracted the Vagrant files, then run the command **vagrant up**. You can also use the included "vagrant.ps1" PowerShell script on Windows for convenience.
 
 This will automatically download and import the custom Vagrant box and run all necessary setup tasks for you.
 
 Once the Vagrant box has been downloaded and set up, you'll be able to immediately connect to the box by running the **vagrant ssh** command if you're on Linux/OSX.
 
-If you're on Windows, you'll need to use a dedicated SSH client such as [PuTTY](http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html). (You connect to 127.0.0.1 on port 2222 with "vagrant" as the username/password combination by default).
+To bind port 80 on your local machine to the Vagrant development box after connecting, you can use SSH port tunneling:
+```sudo ssh -f -N -q -L 80:localhost:80 vagrant@127.0.0.1 -p 2222```
+
+If you're on Windows, you'll need to use a dedicated SSH client such as PuTTY (You connect to 127.0.0.1 on port 2222 with "vagrant" as the username/password combination by default).
+
+A pre-configured portable copy of PuTTY is included with the latest release binaries. To connect, just run the "putty.exe" file located in the "putty" directory, load the IPS Vagrant configuration, then hit connect. The portable client offers the benefit of automatically mapping the development boxes ports for you so no additional configuration is required on your part.
 
 ## Running Commands
 All IPS-Vagrant administrative commands can be accessed using the **ipsv** commandline application. Running the command without any arguments will bring up the help page,
