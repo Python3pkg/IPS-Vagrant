@@ -41,6 +41,9 @@ def cli(ctx, dname, site):
         click.secho('SSL: {s}'.format(s=styled_status(site.ssl)), bold=True)
         click.secho('SPDY: {s}'.format(s=styled_status(site.spdy)), bold=True)
         click.secho('GZIP: {g}'.format(g=styled_status(site.gzip)), bold=True)
+        click.secho('MySQL Database: {db}'.format(db=site.db_name), bold=True)
+        click.secho('MySQL User: {u}'.format(u=site.db_user), bold=True)
+        click.secho('MySQL Password: {u}'.format(u=site.db_pass), bold=True)
         return
 
     # Print sites
