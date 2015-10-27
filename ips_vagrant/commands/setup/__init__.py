@@ -64,7 +64,7 @@ def cli(ctx):
 
     # Install our required packages
     requirements = ['nginx', 'php5-fpm', 'php5-curl', 'php5-gd', 'php5-imagick', 'php5-json', 'php5-mysql',
-                    'php5-readline', 'php5-apcu']
+                    'php5-readline', 'php5-apcu', 'php5-xdebug']
 
     for requirement in requirements:
         # Make sure the package is available
@@ -97,6 +97,13 @@ def cli(ctx):
     FNULL = open(os.devnull, 'w')
     p = Echo('Restarting Nginx...')
     subprocess.check_call(['service', 'nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
+    p.done()
+
+    # php.ini configuration
+    p = Echo('Configuring php...')
+    with open('/etc/php5/fpm/php.ini', 'a') as f:
+        f.write('\n[XDebug]')
+        f.write('\nxdebug.cli_color=1')
     p.done()
 
     # php5-fpm configuration
