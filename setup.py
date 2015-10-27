@@ -8,7 +8,7 @@ def readme():
 
 setup(
     name='IPS-Vagrant',
-    version='0.3.1',
+    version='0.4.0',
     description='A management utility for the (unofficial) Invision Power Suite Vagrant development box.',
     long_description=readme(),
     author='Makoto Fujimoto',

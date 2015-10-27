@@ -2,12 +2,14 @@ import fileinput
 import os
 import apt
 import shutil
+from tempfile import mkstemp
 import click
 import logging
 import subprocess
 from alembic import command
 from alembic.config import Config
 import sys
+import re
 from ips_vagrant.common.progress import Echo
 from ips_vagrant.cli import pass_context, Context
 from ips_vagrant.generators.php5_fpm import FpmPoolConfig
@@ -64,7 +66,7 @@ def cli(ctx):
 
     # Install our required packages
     requirements = ['nginx', 'php5-fpm', 'php5-curl', 'php5-gd', 'php5-imagick', 'php5-json', 'php5-mysql',
-                    'php5-readline', 'php5-apcu']
+                    'php5-readline', 'php5-apcu', 'php5-xdebug']
 
     for requirement in requirements:
         # Make sure the package is available
@@ -97,6 +99,39 @@ def cli(ctx):
     FNULL = open(os.devnull, 'w')
     p = Echo('Restarting Nginx...')
     subprocess.check_call(['service', 'nginx', 'restart'], stdout=FNULL, stderr=subprocess.STDOUT)
+    p.done()
+
+    # php.ini configuration
+    p = Echo('Configuring php...')
+    with open('/etc/php5/fpm/php.ini', 'a') as f:
+        f.write('\n[XDebug]')
+        f.write('\nxdebug.cli_color=1')
+
+    temp_fh, temp_path = mkstemp()
+    with open(temp_path, 'w') as nf:
+        with open('/etc/php5/fpm/php.ini') as of:
+            # Configuration options we are replacing
+            upload_max_filesize = re.compile( '^upload_max_filesize\s+=\s+(\d+[a-zA-Z])\s*$' )
+            post_max_size = re.compile( '^post_max_size\s+=\s+(\d+[a-zA-Z])\s*$' )
+
+            for line in of:
+                match = upload_max_filesize.match( line ) if upload_max_filesize is not True else False
+                if match:
+                    nf.write( 'upload_max_filesize = 1000M\n' )
+                    upload_max_filesize = True
+                    continue
+
+                match = post_max_size.match( line ) if post_max_size is not True else False
+                if match:
+                    nf.write( 'post_max_size = 1000M\n' )
+                    post_max_size = True
+                    continue
+
+                nf.write(line)
+    os.close(temp_fh)
+    os.remove('/etc/php5/fpm/php.ini')
+    shutil.move(temp_path, '/etc/php5/fpm/php.ini')
+    os.chmod('/etc/php5/fpm/php.ini', 0o644)
     p.done()
 
     # php5-fpm configuration
