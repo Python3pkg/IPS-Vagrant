@@ -51,11 +51,14 @@ class IpsManager(DownloadManager):
         url = form.get('action')
 
         # Parse the response for a download link to the latest development release
-        dev_version = Version(form.find('label', {'for': 'version_dev'}).text)
-        if dev_version:
-            self.log.info('Latest IPS development version: %s', version.vstring)
-            dev_url = form.get('action')
-            self.dev_version = IpsMeta(self, dev_version, request=('post', dev_url, {'version': 'latestdev'}), dev=True)
+        try:
+            dev_version = Version(form.find('label', {'for': 'version_dev'}).text)
+            if dev_version:
+                self.log.info('Latest IPS development version: %s', version.vstring)
+                dev_url = form.get('action')
+                self.dev_version = IpsMeta(self, dev_version, request=('post', dev_url, {'version': 'latestdev'}), dev=True)
+        except AttributeError:
+            self.log.info('No development release available for download')
 
         # If we have a cache for this version, just add our url to it
         if version.vtuple in self.versions:
