@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [0.4.0] - 2015-10-27
+### Added
+- mysql command
+- Install and configure the PHP XDebug extension on setup
+
+### Changed
+- Increased PHP upload_max_filesize and post_max_size to 1GB on setup
+
+
 ## [0.3.1] - 2015-10-01
 ### Added
 - Generate a welcome message to be displayed on first login after setup
