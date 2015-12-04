@@ -79,6 +79,8 @@ class Installer(object):
         Start the installation wizard
         """
         self.log.debug('Starting the installation process')
+        continue_link = next(self.browser.links(text_regex='Start Installation'))
+        self.browser.follow_link(continue_link)
         self.system_check()
 
     def system_check(self):
