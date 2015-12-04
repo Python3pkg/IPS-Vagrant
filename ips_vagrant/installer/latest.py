@@ -81,7 +81,6 @@ class Installer(object):
         self.log.debug('Starting the installation process')
 
         self.browser.open(self.url)
-        self._check_title(self.browser.title())
 
         continue_link = next(self.browser.links(text_regex='Start Installation'))
         self.browser.follow_link(continue_link)
