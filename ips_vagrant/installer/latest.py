@@ -174,7 +174,7 @@ class Installer(object):
                               abort=True)
             self.log.info('Dropping existing database: {db}'.format(db=db_name))
             self.mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=db_name))
-            self.mysql.execute('DROP USER IF EXISTS `{u}`'.format(u=db_user))
+            self.mysql.execute('DROP USER `{u}`'.format(u=db_user))
             self.mysql.execute('CREATE DATABASE `{db}`'.format(db=db_name))
 
         self.mysql.execute("GRANT ALL ON {db}.* TO '{u}'@'localhost' IDENTIFIED BY '{p}'"
