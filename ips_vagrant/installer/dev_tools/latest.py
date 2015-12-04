@@ -42,8 +42,8 @@ class DevToolsInstaller(object):
             for dv in dev_tools.versions:
                 if (dev_version is None) or (dv <= self.site.version):
                     dev_version = dev_tools.versions[dv]
-            self.log.warn('No Dev Tools for this IPS release found, using closest match (%s)',
-                          dev_version.version.vstring)
+            self.log.warn('No Dev Tools for IPS release %s found, using closest match (%s)',
+                          self.site.version, dev_version.version.vstring)
             status = p.WARN
         filename = dev_tools.get(dev_version)
         p.done(status)
