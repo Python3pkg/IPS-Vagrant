@@ -17,7 +17,6 @@ class Installer(Latest):
         self.log.debug('Starting the installation process')
 
         self.browser.open(self.url)
-        self._check_title(self.browser.title())
 
         self.system_check()
 
