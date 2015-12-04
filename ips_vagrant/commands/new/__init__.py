@@ -245,7 +245,7 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
         i.start()
     else:
         db_info = None
-        if click.confirm('Would you like to create the database for this installation now?'):
+        if click.confirm('Would you like to create the database for this installation now?', default=True):
             db_info = create_database(site)
 
         click.echo('------')
