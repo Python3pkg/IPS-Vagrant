@@ -11,4 +11,8 @@ class Installer(Latest):
         Start the installation wizard
         """
         self.log.debug('Starting the installation process')
+
+        self.browser.open(self.url)
+        self._check_title(self.browser.title())
+
         self.system_check()

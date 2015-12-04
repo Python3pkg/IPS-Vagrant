@@ -79,15 +79,19 @@ class Installer(object):
         Start the installation wizard
         """
         self.log.debug('Starting the installation process')
+
+        self.browser.open(self.url)
+        self._check_title(self.browser.title())
+
         continue_link = next(self.browser.links(text_regex='Start Installation'))
         self.browser.follow_link(continue_link)
+
         self.system_check()
 
     def system_check(self):
         """
         System requirements check
         """
-        self.browser.open(self.url)
         self._check_title(self.browser.title())
         p = Echo('Running system check...')
         rsoup = BeautifulSoup(self.browser.response().read(), "html.parser")
