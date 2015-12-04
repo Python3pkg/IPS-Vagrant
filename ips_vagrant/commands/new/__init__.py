@@ -286,7 +286,7 @@ def create_database(site):
                 return
 
             mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=db_name))
-            mysql.execute('DROP USER IF EXISTS `{u}`'.format(u=db_user))
+            mysql.execute('DROP USER `{u}`'.format(u=db_user))
             mysql.execute('CREATE DATABASE `{db}`'.format(db=db_name))
 
         mysql.execute("GRANT ALL ON {db}.* TO '{u}'@'localhost' IDENTIFIED BY '{p}'"
