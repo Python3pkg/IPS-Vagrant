@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 - Resolved an installation issue with IPS versions 4.1.4+
+- Fixed a MySQL query bug when dropping existing database tables for new installations
 
 
 ## [0.4.0] - 2015-10-27
