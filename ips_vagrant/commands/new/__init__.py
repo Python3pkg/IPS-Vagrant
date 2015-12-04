@@ -2,10 +2,16 @@ import os
 import re
 import click
 import shutil
+import string
+import random
 import logging
 import zipfile
 import tempfile
 import subprocess
+from hashlib import md5
+
+from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import collate
 from ips_vagrant.common.progress import Echo, MarkerProgressBar
 from ips_vagrant.common.version import Version
@@ -238,7 +244,52 @@ def cli(ctx, name, dname, license_key, ips_version, force, enable, ssl, spdy, gz
         p.done()
         i.start()
     else:
+        db_info = None
+        if click.confirm('Would you like to create the database for this installation now?', default=True):
+            db_info = create_database(site)
+
         click.echo('------')
+
+        if db_info:
+            db_name, db_user, db_pass = db_info
+
+            log.debug('MySQL Database Name: %s', db_name)
+            log.debug('MySQL Database User: %s', db_user)
+            log.debug('MySQL Database Password: %s', db_pass)
+
+            click.secho('MySQL Database Name: {dbn}'.format(dbn=db_name), bold=True)
+            click.secho('MySQL Database User: {dbu}'.format(dbu=db_user), bold=True)
+            click.secho('MySQL Database Password: {dbp}'.format(dbp=db_pass), bold=True)
+
         click.secho('IPS is now ready to be installed. To proceed with the installation, follow the link below',
                     fg='yellow', bold=True)
         click.echo('{schema}://{host}'.format(schema='https' if site.ssl else 'http', host=site.domain.name))
+
+
+def create_database(site):
+        # Create the database
+        md5hex = md5(site.domain.name + site.slug).hexdigest()
+        db_name = 'ipsv_{md5}'.format(md5=md5hex)
+        # MySQL usernames are limited to 16 characters max
+        db_user = 'ipsv_{md5}'.format(md5=md5hex[:11])
+        rand_pass = ''.join(random.SystemRandom()
+                            .choice(string.ascii_letters + string.digits) for _ in range(random.randint(16, 24)))
+        db_pass = rand_pass
+
+        mysql = create_engine('mysql://root:secret@localhost')
+        try:
+            mysql.execute('CREATE DATABASE `{db}`'.format(db=db_name))
+        except SQLAlchemyError:
+            confirmed = click.confirm('A previous database for this installation already exists.\n'
+                                      'Would you like to drop it now?')
+            if not confirmed:
+                return
+
+            mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=db_name))
+            mysql.execute('DROP USER `{u}`'.format(u=db_user))
+            mysql.execute('CREATE DATABASE `{db}`'.format(db=db_name))
+
+        mysql.execute("GRANT ALL ON {db}.* TO '{u}'@'localhost' IDENTIFIED BY '{p}'"
+                      .format(db=db_name, u=db_user, p=db_pass))
+
+        return db_name, db_user, db_pass

@@ -1,12 +1,12 @@
 from urllib import urlencode
 from urlparse import urlparse, parse_qs, urlunparse
-from ips_vagrant.installer.latest import Installer as Latest
+from ips_vagrant.installer.V_4_1_3_2 import Installer as V_4_1_3_2
 
 
 version = (4, 0, 11)
 
 
-class Installer(Latest):
+class Installer(V_4_1_3_2):
 
     def _check_if_complete(self, url, json_response):
         """

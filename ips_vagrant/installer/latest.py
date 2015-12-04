@@ -79,13 +79,18 @@ class Installer(object):
         Start the installation wizard
         """
         self.log.debug('Starting the installation process')
+
+        self.browser.open(self.url)
+
+        continue_link = next(self.browser.links(text_regex='Start Installation'))
+        self.browser.follow_link(continue_link)
+
         self.system_check()
 
     def system_check(self):
         """
         System requirements check
         """
-        self.browser.open(self.url)
         self._check_title(self.browser.title())
         p = Echo('Running system check...')
         rsoup = BeautifulSoup(self.browser.response().read(), "html.parser")
@@ -169,7 +174,7 @@ class Installer(object):
                               abort=True)
             self.log.info('Dropping existing database: {db}'.format(db=db_name))
             self.mysql.execute('DROP DATABASE IF EXISTS `{db}`'.format(db=db_name))
-            self.mysql.execute('DROP USER IF EXISTS `{u}`'.format(u=db_user))
+            self.mysql.execute('DROP USER `{u}`'.format(u=db_user))
             self.mysql.execute('CREATE DATABASE `{db}`'.format(db=db_name))
 
         self.mysql.execute("GRANT ALL ON {db}.* TO '{u}'@'localhost' IDENTIFIED BY '{p}'"
@@ -224,9 +229,7 @@ class Installer(object):
         self.browser.form[self.FIELD_ADMIN_PASS] = password
         self.browser.form[self.FIELD_ADMIN_PASS_CONFIRM] = password
         self.browser.form[self.FIELD_ADMIN_EMAIL] = email
-        p = Echo('Submitting admin information...')
-        self.browser.submit()
-        p.done()
+        Echo('Submitting admin information...').done()
 
         if len(prompted) >= 3:
             save = click.confirm('Would you like to save and use these admin credentials for future installations?')
@@ -244,9 +247,8 @@ class Installer(object):
         """
         Start the installation
         """
+        self.browser.submit()
         self._check_title(self.browser.title())
-        continue_link = next(self.browser.links(text_regex='Start Installation'))
-        self.browser.follow_link(continue_link)
 
     def _get_mr_link(self):
         """

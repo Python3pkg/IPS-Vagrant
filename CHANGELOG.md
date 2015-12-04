@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.4.1] - 2015-12-04
+### Added
+- Prompt for automatic creation of databases when not using the auto-installer
+
+### Fixed
+- Resolved an installation issue with IPS versions 4.1.4+
+
 
 ## [0.4.0] - 2015-10-27
 ### Added
