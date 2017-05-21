@@ -5,8 +5,8 @@ import logging
 import json
 import requests
 from hashlib import md5
-from urllib import urlencode
-from urlparse import urlparse, urlunparse, parse_qs
+from urllib.parse import urlencode
+from urllib.parse import urlparse, urlunparse, parse_qs
 from bs4 import BeautifulSoup
 from mechanize import Browser
 from sqlalchemy import create_engine

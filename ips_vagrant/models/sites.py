@@ -6,7 +6,7 @@ import logging
 import shutil
 from sqlalchemy.exc import SQLAlchemyError
 import ips_vagrant
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 from sqlalchemy import create_engine, collate
 from sqlalchemy import Column, Integer, Text, ForeignKey, text
 from sqlalchemy.orm import relationship, sessionmaker, scoped_session

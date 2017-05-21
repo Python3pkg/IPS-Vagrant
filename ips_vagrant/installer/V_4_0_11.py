@@ -1,5 +1,5 @@
-from urllib import urlencode
-from urlparse import urlparse, parse_qs, urlunparse
+from urllib.parse import urlencode
+from urllib.parse import urlparse, parse_qs, urlunparse
 from ips_vagrant.installer.V_4_1_3_2 import Installer as V_4_1_3_2
 
 

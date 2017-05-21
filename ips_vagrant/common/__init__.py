@@ -2,11 +2,11 @@ from distutils.version import StrictVersion, LooseVersion
 import os
 import click
 import logging
-import cookielib
+import http.cookiejar
 import requests
 import ips_vagrant
-from urlparse import urlparse
-from ConfigParser import ConfigParser
+from urllib.parse import urlparse
+from configparser import ConfigParser
 
 
 def config():
@@ -92,13 +92,13 @@ def cookiejar(name='session'):
     """
     log = logging.getLogger('ipsv.common.cookiejar')
     spath = os.path.join(config().get('Paths', 'Data'), '{n}.txt'.format(n=name))
-    cj = cookielib.LWPCookieJar(spath)
+    cj = http.cookiejar.LWPCookieJar(spath)
     log.debug('Attempting to load session file: %s', spath)
     if os.path.exists(spath):
         try:
             cj.load()
             log.info('Successfully loaded a saved session / cookie file')
-        except cookielib.LoadError as e:
+        except http.cookiejar.LoadError as e:
             log.warn('Session / cookie file exists, but could not be loaded', exc_info=e)
 
     return cj
@@ -132,10 +132,10 @@ def unparse_version(vtuple):
 
 def byteify(input):
     if isinstance(input, dict):
-        return {byteify(key):byteify(value) for key,value in input.iteritems()}
+        return {byteify(key):byteify(value) for key,value in input.items()}
     elif isinstance(input, list):
         return [byteify(element) for element in input]
-    elif isinstance(input, unicode):
+    elif isinstance(input, str):
         return input.encode('utf-8')
     else:
         return input

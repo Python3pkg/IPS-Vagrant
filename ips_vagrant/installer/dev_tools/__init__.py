@@ -11,7 +11,7 @@ _modnames = [name for __, name, ispkg in pkgutil.iter_modules([path]) if not isp
 for modname in _modnames:
     m = importlib.import_module('ips_vagrant.installer.dev_tools.{name}'.format(name=modname))
     versions[getattr(m, 'version')] = getattr(m, 'DevToolsInstaller')
-versions = OrderedDict(sorted(versions.items(), key=lambda v: v[0]))
+versions = OrderedDict(sorted(list(versions.items()), key=lambda v: v[0]))
 
 
 def dev_tools_installer(cv, ctx, site):

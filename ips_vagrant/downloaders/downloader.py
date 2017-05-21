@@ -9,12 +9,10 @@ from ips_vagrant.common import http_session, unparse_version
 from ips_vagrant.scrapers.errors import HtmlParserError
 
 
-class DownloadManager(object):
+class DownloadManager(object, metaclass=ABCMeta):
     """
     IPS Versions Manager
     """
-
-    __metaclass__ = ABCMeta
 
     # noinspection PyShadowingBuiltins
     def __init__(self, ctx, meta_class):
@@ -48,7 +46,7 @@ class DownloadManager(object):
         """
         Sort versions by their version number
         """
-        self.versions = OrderedDict(sorted(self.versions.items(), key=lambda v: v[0]))
+        self.versions = OrderedDict(sorted(list(self.versions.items()), key=lambda v: v[0]))
 
     def _populate_local(self):
         """

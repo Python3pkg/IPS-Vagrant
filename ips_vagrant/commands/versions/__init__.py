@@ -24,12 +24,12 @@ def cli(ctx, resource):
 
     if resource == 'ips':
         resource = IpsManager(ctx)
-        for r in resource.versions.values():
+        for r in list(resource.versions.values()):
             click.secho(r.version.vstring, bold=True)
         return
 
     if resource in ('dev_tools', 'dev tools'):
         resource = DevToolsManager(ctx)
-        for r in resource.versions.values():
+        for r in list(resource.versions.values()):
             click.secho('{v} ({id})'.format(v=r.version.vstring, id=r.version.vid), bold=True)
         return

@@ -3,7 +3,7 @@ import click
 import logging
 import pkgutil
 import importlib
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 from ips_vagrant import __version__
 from ips_vagrant.scrapers import Login
 from ips_vagrant.models.sites import Session
